@@ -1,4 +1,4 @@
-# Standup Pre-Read: Tenant Success ART
+# Standup Pre-Read: Team 33
 
 ## Executive Summary
 
