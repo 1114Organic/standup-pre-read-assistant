@@ -25,3 +25,6 @@ class Activity:
     decision_signal: str | None = None
     risk_signal: str | None = None
     confidence: str = "high"
+    updated_timestamp: datetime | None = None
+    ci_state: str | None = None
+    review_state: str | None = None
