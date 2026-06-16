@@ -27,7 +27,7 @@ def _sample_markdown() -> str:
         load_github_pr_sample(Config.github_path),
         load_prior_standup(Config.prior_standup_path),
     )
-    return generate_pre_read(activities, "Tenant Success ART", stale_pr_days=5, today=date(2026, 6, 16))
+    return generate_pre_read(activities, "Example Platform Team", stale_pr_days=5, today=date(2026, 6, 16))
 
 
 def test_generated_pre_read_includes_required_sections() -> None:
@@ -42,30 +42,32 @@ def test_normalized_activity_model_preserves_jira_github_and_prior_signals() -> 
     github = normalize_github(load_github_pr_sample(Config.github_path))
     prior = normalize_prior(load_prior_standup(Config.prior_standup_path))
 
-    blocked = next(activity for activity in jira if activity.source_id == "BIP-2429")
-    failing_pr = next(activity for activity in github if activity.source_id == "PR #322")
+    blocked = next(activity for activity in jira if activity.source_id == "DEMO-103")
+    failing_pr = next(activity for activity in github if activity.related_work_items == ("DEMO-104",))
 
     assert blocked.blocker_signal == "Waiting on IAM approval."
-    assert failing_pr.related_work_items == ("BIP-2431",)
+    assert failing_pr.related_work_items == ("DEMO-104",)
     assert failing_pr.ci_state == "failing"
     assert failing_pr.review_state == "review_required"
     assert failing_pr.updated_timestamp is not None
-    assert any(activity.source_id == "BIP-2429" and activity.activity_type == "prior_carryover" for activity in prior)
+    assert any(activity.source_id == "DEMO-103" and activity.activity_type == "prior_carryover" for activity in prior)
     assert all("Confirm documentation acceptance criteria" not in activity.title for activity in prior)
 
 
 def test_generated_pre_read_includes_data_driven_items_and_sources() -> None:
     markdown = _sample_markdown()
+    github = normalize_github(load_github_pr_sample(Config.github_path))
+    failing_pr = next(activity for activity in github if activity.related_work_items == ("DEMO-104",))
 
-    assert "BIP-2422 is done" in markdown
-    assert "BIP-2417 moved to review" in markdown
-    assert "BIP-2429 is blocked Waiting on IAM approval" in markdown
-    assert "Decide whether search relevance tuning is global or template-only. (BIP-2431)" in markdown
-    assert "PR #322 is open for 6 days since June 10, has failing CI linked to BIP-2431" in markdown
-    assert "Follow up with IAM approver for BIP-2429" in markdown
-    assert "Confirm documentation acceptance criteria for BIP-2422" not in markdown
-    assert "https://jira.example.local/browse/BIP-2431" in markdown
-    assert "https://github.com/example/tenant-success-portal/pull/322" in markdown
+    assert "DEMO-101 is done" in markdown
+    assert "DEMO-102 moved to review" in markdown
+    assert "DEMO-103 is blocked Waiting on IAM approval" in markdown
+    assert "Decide whether search relevance tuning is global or workspace-only. (DEMO-104)" in markdown
+    assert f"{failing_pr.source_id} is open for 6 days since June 10, has failing CI linked to DEMO-104" in markdown
+    assert "Follow up with IAM approver for DEMO-103" in markdown
+    assert "Confirm documentation acceptance criteria for DEMO-101" not in markdown
+    assert "https://jira.example.local/browse/DEMO-104" in markdown
+    assert failing_pr.source_url in markdown
 
 
 def test_generator_uses_alternate_issue_keys_and_pr_numbers() -> None:
@@ -130,8 +132,8 @@ def test_generator_uses_alternate_issue_keys_and_pr_numbers() -> None:
     assert "PR #9001 is open for 15 days since June 1, has failing CI, requested review changes, no updates for 8 days linked to ALT-100" in markdown
     assert "Follow up on ALT-100 approval" in markdown
     assert "Retest OLD-1" not in markdown
-    assert "BIP-" not in markdown
-    assert "PR #322" not in markdown
+    assert "DEMO-" not in markdown
+    assert "example-platform-service" not in markdown
 
 
 def test_build_pre_read_writes_configured_output(tmp_path) -> None:
@@ -141,4 +143,4 @@ def test_build_pre_read_writes_configured_output(tmp_path) -> None:
     markdown = build_pre_read(config)
 
     assert output_path.read_text(encoding="utf-8") == markdown
-    assert "# Standup Pre-Read: Tenant Success ART" in markdown
+    assert "# Standup Pre-Read: Example Platform Team" in markdown

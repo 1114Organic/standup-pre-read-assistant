@@ -1,47 +1,47 @@
 {
   "repositories": [
     {
-      "name": "tenant-success-portal",
+      "name": "example-platform-service",
       "pull_requests": [
         {
-          "number": 318,
-          "title": "Add template usage event publisher",
+          "number": 501,
+          "title": "Add usage event publisher",
           "author": "a-engineer",
           "state": "open",
           "review_state": "changes_requested",
           "created": "2026-06-13T10:12:00-04:00",
           "updated": "2026-06-15T15:50:00-04:00",
           "merged": false,
-          "url": "https://github.com/example/tenant-success-portal/pull/318",
-          "linked_issues": ["BIP-2417"],
+          "url": "https://github.com/example/example-platform-service/pull/501",
+          "linked_issues": ["DEMO-102"],
           "ci_state": "passing",
           "summary": "PR is open with passing checks. Reviewer requested small changes to event naming."
         },
         {
-          "number": 322,
-          "title": "Fix portal search scoring configuration",
+          "number": 502,
+          "title": "Fix platform search scoring configuration",
           "author": "d-developer",
           "state": "open",
           "review_state": "review_required",
           "created": "2026-06-10T09:04:00-04:00",
           "updated": "2026-06-15T13:40:00-04:00",
           "merged": false,
-          "url": "https://github.com/example/tenant-success-portal/pull/322",
-          "linked_issues": ["BIP-2431"],
+          "url": "https://github.com/example/example-platform-service/pull/502",
+          "linked_issues": ["DEMO-104"],
           "ci_state": "failing",
           "summary": "PR remains open and CI is failing on search ranking tests."
         },
         {
-          "number": 325,
-          "title": "Update onboarding docs for golden path",
+          "number": 503,
+          "title": "Update onboarding docs for standard workflow",
           "author": "b-writer",
           "state": "closed",
           "review_state": "approved",
           "created": "2026-06-14T08:30:00-04:00",
           "updated": "2026-06-15T11:20:00-04:00",
           "merged": true,
-          "url": "https://github.com/example/tenant-success-portal/pull/325",
-          "linked_issues": ["BIP-2422"],
+          "url": "https://github.com/example/example-platform-service/pull/503",
+          "linked_issues": ["DEMO-101"],
           "ci_state": "passing",
           "summary": "PR merged successfully."
         }

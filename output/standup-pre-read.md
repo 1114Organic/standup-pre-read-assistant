@@ -1,47 +1,51 @@
-# Standup Pre-Read: Tenant Success ART
+# Standup Pre-Read: Example Platform Team
 
 Generated: 2026-06-16
 
 ## Executive Summary
 
-The team completed the golden path onboarding documentation and continued work on template usage tracking and developer portal search. The main blocker remains IAM approval for the template publisher service account. Search relevance work also needs a product decision and has a failing CI signal that should be discussed.
+The generated pre-read found 4 progress items found, 1 blocker need action, 1 decision need discussion, 2 risk or aging-work items flagged.
 
 ## Progress Since Last Standup
 
-- BIP-2422 is done. The onboarding documentation was completed and accepted by the product owner. Source: BIP-2422, PR #325.
-- BIP-2417 moved to review. The related PR has passing checks, with reviewer-requested changes on event naming. Source: BIP-2417, PR #318.
-- BIP-2431 remains in progress. A search scoring fix is open, but CI is failing on search ranking tests. Source: BIP-2431, PR #322.
+- DEMO-101 is done. Documentation updates were completed and accepted by the product owner. Source: DEMO-101, PR #503.
+- DEMO-102 moved to review. Implementation completed and moved to review. Waiting on platform reviewer feedback. Related PR review state is changes requested. Source: DEMO-102, PR #501.
+- DEMO-103 is blocked. Work is blocked waiting for approval of the service account permission change. Source: DEMO-103.
+- DEMO-104 is in progress. Initial fix is in progress. Team needs to decide whether relevance tuning should apply globally or only to workspace search. Source: DEMO-104, PR #502.
 
 ## Blockers Needing Action
 
-- BIP-2429 is blocked waiting on IAM approval for the service account permission change. Source: BIP-2429, prior standup carryover.
+- DEMO-103 is blocked Waiting on IAM approval. Source: DEMO-103.
 
 ## Decisions Needed
 
-- Decide whether search relevance tuning for BIP-2431 should apply globally or only to template search. Source: BIP-2431, prior standup decision.
+- Decide whether search relevance tuning is global or workspace-only. (DEMO-104). Source: DEMO-104.
 
 ## Risks and Aging Work
 
-- PR #322 has been open since June 10 and has failing CI. This should be treated as a risk to completing BIP-2431 during the sprint. Source: PR #322.
+- PR #501 is requested review changes linked to DEMO-102. Source: PR #501.
+- PR #502 is open for 6 days since June 10, has failing CI linked to DEMO-104. Source: PR #502.
 
 ## Carryover From Yesterday
 
-- Follow up with IAM approver for BIP-2429. Source: prior standup carryover.
-- BIP-2431 search relevance decision remains open. Source: prior standup decision.
+- DEMO-103: Service account permissions need IAM approval before the data exporter can be tested. Source: DEMO-103.
+- DEMO-104: Decide whether platform search relevance tuning should apply globally or only to workspace search. Source: DEMO-104.
+- Follow up with IAM approver for DEMO-103. Source: DEMO-103.
 
 ## Suggested Standup Agenda
 
-1. Confirm owner and next step for IAM approval on BIP-2429.
-2. Decide the scope of search relevance tuning for BIP-2431.
-3. Review failing CI on PR #322 and determine whether help is needed.
-4. Confirm reviewer-requested event naming updates for PR #318.
+1. Confirm next step: DEMO-103 is blocked Waiting on IAM approval.
+2. Make decision: Decide whether search relevance tuning is global or workspace-only. (DEMO-104).
+3. Review risk: PR #502 is open for 6 days since June 10, has failing CI linked to DEMO-104.
+4. Confirm review path for PR #501: Add usage event publisher.
+5. Confirm review path for PR #502: Fix platform search scoring configuration.
 
 ## Source References
 
-- BIP-2417: https://jira.example.local/browse/BIP-2417
-- BIP-2422: https://jira.example.local/browse/BIP-2422
-- BIP-2429: https://jira.example.local/browse/BIP-2429
-- BIP-2431: https://jira.example.local/browse/BIP-2431
-- PR #318: https://github.com/example/tenant-success-portal/pull/318
-- PR #322: https://github.com/example/tenant-success-portal/pull/322
-- PR #325: https://github.com/example/tenant-success-portal/pull/325
+- DEMO-101: https://jira.example.local/browse/DEMO-101
+- DEMO-102: https://jira.example.local/browse/DEMO-102
+- DEMO-103: https://jira.example.local/browse/DEMO-103
+- DEMO-104: https://jira.example.local/browse/DEMO-104
+- PR #501: https://github.com/example/example-platform-service/pull/501
+- PR #502: https://github.com/example/example-platform-service/pull/502
+- PR #503: https://github.com/example/example-platform-service/pull/503

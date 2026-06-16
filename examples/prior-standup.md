@@ -2,14 +2,14 @@
 
 ## Blockers Needing Action
 
-- BIP-2429: Service account permissions need IAM approval before the template publisher can be tested. Status: unresolved.
+- DEMO-103: Service account permissions need IAM approval before the data exporter can be tested. Status: unresolved.
 
 ## Decisions Needed
 
-- BIP-2431: Decide whether developer portal search relevance tuning should apply globally or only to template search. Status: open.
+- DEMO-104: Decide whether platform search relevance tuning should apply globally or only to workspace search. Status: open.
 
 ## Carryover From Yesterday
 
-- Follow up with IAM approver for BIP-2429. Status: unresolved.
-- Confirm documentation acceptance criteria for BIP-2422. Status: resolved.
+- Follow up with IAM approver for DEMO-103. Status: unresolved.
+- Confirm documentation acceptance criteria for DEMO-101. Status: resolved.
 
