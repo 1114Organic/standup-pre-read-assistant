@@ -1,8 +1,8 @@
 # Standup Pre-Read Assistant
 
-AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, and prior standup notes.
+AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
 
-The first build target is a thin-slice MVP:
+The first build target is a thin-slice MVP: 
 
 1. Read sample Jira JSON.
 2. Read sample GitHub pull request JSON.
