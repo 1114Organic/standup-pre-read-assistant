@@ -1,0 +1,60 @@
+{
+  "team": "Tenant Success ART",
+  "window": {
+    "start": "2026-06-15T09:00:00-04:00",
+    "end": "2026-06-16T09:00:00-04:00"
+  },
+  "issues": [
+    {
+      "key": "BIP-2417",
+      "title": "Add Backstage template usage tracking",
+      "status": "In Review",
+      "assignee": "A. Engineer",
+      "updated": "2026-06-15T15:42:00-04:00",
+      "sprint": "Sprint 18",
+      "labels": ["developer-experience", "metrics"],
+      "url": "https://jira.example.local/browse/BIP-2417",
+      "summary": "Implementation completed and moved to review. Waiting on platform reviewer feedback.",
+      "blocker": false
+    },
+    {
+      "key": "BIP-2422",
+      "title": "Document golden path onboarding workflow",
+      "status": "Done",
+      "assignee": "B. Writer",
+      "updated": "2026-06-15T11:18:00-04:00",
+      "sprint": "Sprint 18",
+      "labels": ["onboarding", "documentation"],
+      "url": "https://jira.example.local/browse/BIP-2422",
+      "summary": "Documentation updates were completed and accepted by the product owner.",
+      "blocker": false
+    },
+    {
+      "key": "BIP-2429",
+      "title": "Resolve service account permissions for template publisher",
+      "status": "Blocked",
+      "assignee": "C. Developer",
+      "updated": "2026-06-15T16:05:00-04:00",
+      "sprint": "Sprint 18",
+      "labels": ["iam", "templates"],
+      "url": "https://jira.example.local/browse/BIP-2429",
+      "summary": "Work is blocked waiting for approval of the service account permission change.",
+      "blocker": true,
+      "blocked_reason": "Waiting on IAM approval."
+    },
+    {
+      "key": "BIP-2431",
+      "title": "Fix developer portal search relevance issue",
+      "status": "In Progress",
+      "assignee": "D. Developer",
+      "updated": "2026-06-15T14:22:00-04:00",
+      "sprint": "Sprint 18",
+      "labels": ["backstage", "search"],
+      "url": "https://jira.example.local/browse/BIP-2431",
+      "summary": "Initial fix is in progress. Team needs to decide whether relevance tuning should apply globally or only to template search.",
+      "blocker": false,
+      "decision_needed": "Decide whether search relevance tuning is global or template-only."
+    }
+  ]
+}
+
