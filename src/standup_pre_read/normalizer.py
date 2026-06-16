@@ -34,6 +34,7 @@ def normalize_jira(data: dict[str, Any]) -> list[Activity]:
                 blocker_signal=issue.get("blocked_reason") if issue.get("blocker") else None,
                 decision_signal=issue.get("decision_needed"),
                 confidence="high",
+                updated_timestamp=parse_datetime(issue.get("updated")),
             )
         )
     return activities
@@ -64,6 +65,9 @@ def normalize_github(data: dict[str, Any]) -> list[Activity]:
                     decision_signal=None,
                     risk_signal=risk,
                     confidence="high",
+                    updated_timestamp=parse_datetime(pr.get("updated")),
+                    ci_state=pr.get("ci_state"),
+                    review_state=pr.get("review_state"),
                 )
             )
     return activities
