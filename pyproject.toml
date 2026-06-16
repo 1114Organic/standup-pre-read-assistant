@@ -1,0 +1,12 @@
+[project]
+name = "standup-pre-read-assistant"
+version = "0.1.0"
+description = "Local thin-slice standup pre-read generator using sample Jira, GitHub, and prior standup data."
+requires-python = ">=3.11"
+
+[project.scripts]
+standup-pre-read = "standup_pre_read.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
