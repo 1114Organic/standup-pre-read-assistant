@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from .collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
+from .collectors import SourceConnector, connector_from_config
 from .config import Config
 from .generator import generate_pre_read
 from .normalizer import normalize_all
 
 
-def build_pre_read(config: Config = Config()) -> str:
-    jira_data = load_jira_sample(config.jira_path)
-    github_data = load_github_pr_sample(config.github_path)
-    prior_markdown = load_prior_standup(config.prior_standup_path)
-    activities = normalize_all(jira_data, github_data, prior_markdown)
+def build_pre_read(config: Config = Config(), connector: SourceConnector | None = None) -> str:
+    source_connector = connector or connector_from_config(config)
+    sources = source_connector.collect()
+    activities = normalize_all(sources.jira, sources.github, sources.prior_standup)
     markdown = generate_pre_read(activities, config.team_name, config.stale_pr_days)
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
     config.output_path.write_text(markdown, encoding="utf-8")

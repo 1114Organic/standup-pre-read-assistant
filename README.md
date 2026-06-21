@@ -32,6 +32,10 @@ Live APIs, Teams notifications, Harness, and EKS deployment are intentionally de
 └── tests
 ```
 
+## Source Modes
+
+The application now selects its input connector from `Config.source_mode`. The default `sample_files` mode uses the configured Jira JSON, GitHub PR JSON, and prior-standup markdown paths. New live or service-backed connectors can implement the same connector interface and be selected from configuration without changing the pre-read generation flow.
+
 ## Codex Starter Prompt
 
 ```text

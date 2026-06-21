@@ -23,6 +23,10 @@ Future runtime target is an EKS CronJob for the team pilot.
 
 Loads team-specific settings such as team name, standup time, timezone, lookback window, stale PR threshold, input paths, and output path.
 
+### Source Connector Abstraction
+
+Selects a source connector from configuration and returns one raw payload containing Jira, GitHub, and prior standup inputs. The current supported mode is `sample_files`, which keeps the MVP local while preserving a seam for future live API connectors.
+
 ### Jira File Collector
 
 Reads sample Jira JSON and maps issue fields into normalized activity records.

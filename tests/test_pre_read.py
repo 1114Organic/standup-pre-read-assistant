@@ -144,3 +144,51 @@ def test_build_pre_read_writes_configured_output(tmp_path) -> None:
 
     assert output_path.read_text(encoding="utf-8") == markdown
     assert "# Standup Pre-Read: Example Platform Team" in markdown
+
+
+def test_configured_file_connector_collects_sample_sources() -> None:
+    from standup_pre_read.collectors import FileSourceConnector, connector_from_config
+    from standup_pre_read.config import SourceMode
+
+    config = Config(source_mode=SourceMode.SAMPLE_FILES)
+    connector = connector_from_config(config)
+
+    assert isinstance(connector, FileSourceConnector)
+    sources = connector.collect()
+    assert sources.jira["team"] == "Example Platform Team"
+    assert sources.github["repositories"]
+    assert "Carryover From Yesterday" in sources.prior_standup
+
+
+def test_build_pre_read_uses_injected_connector(tmp_path) -> None:
+    from standup_pre_read.collectors import SourcePayload
+
+    class StubConnector:
+        def collect(self) -> SourcePayload:
+            return SourcePayload(
+                jira={
+                    "team": "Injected Team",
+                    "issues": [
+                        {
+                            "key": "INJ-1",
+                            "title": "Validate connector seam",
+                            "status": "Done",
+                            "assignee": "Dev One",
+                            "updated": "2026-06-15T12:00:00+00:00",
+                            "sprint": "Sprint 1",
+                            "url": "https://jira.example.local/browse/INJ-1",
+                            "summary": "Connector-provided Jira data was normalized.",
+                        }
+                    ],
+                },
+                github={"repositories": []},
+                prior_standup="# Prior\n",
+            )
+
+    config = Config(team_name="Injected Team", output_path=tmp_path / "pre-read.md")
+
+    markdown = build_pre_read(config, connector=StubConnector())
+
+    assert "# Standup Pre-Read: Injected Team" in markdown
+    assert "INJ-1 is done. Connector-provided Jira data was normalized." in markdown
+    assert "DEMO-" not in markdown
