@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import argparse
+from collections.abc import Sequence
+from pathlib import Path
+
 from .config import Config
 from .connectors import source_connector_for
 from .generator import generate_pre_read
@@ -16,9 +20,29 @@ def build_pre_read(config: Config | None = None) -> str:
     return markdown
 
 
-def main() -> None:
-    config = Config()
-    build_pre_read(config)
+def parse_args(argv: Sequence[str] | None = None) -> Config:
+    parser = argparse.ArgumentParser(description="Generate a standup pre-read markdown draft.")
+    parser.add_argument(
+        "--source-mode",
+        default=Config.source_mode,
+        help="Source connector mode to use. Currently supported: sample.",
+    )
+    parser.add_argument(
+        "--output-path",
+        type=Path,
+        default=Config.output_path,
+        help="Path where the generated markdown pre-read should be written.",
+    )
+    args = parser.parse_args(argv)
+    return Config(source_mode=args.source_mode, output_path=args.output_path)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    config = parse_args(argv)
+    try:
+        build_pre_read(config)
+    except ValueError as exc:
+        raise SystemExit(f"error: {exc}") from exc
     print(f"Wrote {config.output_path}")
 
 

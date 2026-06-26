@@ -31,7 +31,15 @@ PYTHONPATH=src python -m standup_pre_read.cli
 standup-pre-read
 ```
 
-The default configuration uses `source_mode="sample"` and reads the files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP.
+The CLI defaults to `--source-mode sample` and writes `output/standup-pre-read.md`. You can make those defaults explicit or choose a different output file:
+
+```bash
+PYTHONPATH=src python -m standup_pre_read.cli --source-mode sample --output-path output/custom-pre-read.md
+# or, after installation:
+standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
+```
+
+The default configuration reads the sample files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
 ## Quality Checks
 
