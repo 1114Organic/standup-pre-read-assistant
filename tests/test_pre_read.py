@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from standup_pre_read.cli import build_pre_read
+from standup_pre_read.cli import build_pre_read, main, parse_args
 from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read
@@ -182,6 +182,41 @@ def test_build_pre_read_rejects_unsupported_source_mode(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Unsupported source_mode 'jira_mcp'"):
         build_pre_read(config)
+
+
+def test_parse_args_defaults_to_sample_source_and_default_output() -> None:
+    config = parse_args([])
+
+    assert config.source_mode == "sample"
+    assert config.output_path == Path("output/standup-pre-read.md")
+
+
+def test_parse_args_accepts_source_mode_and_output_path(tmp_path: Path) -> None:
+    output_path = tmp_path / "custom-pre-read.md"
+
+    config = parse_args(["--source-mode", "sample", "--output-path", str(output_path)])
+
+    assert config.source_mode == "sample"
+    assert config.output_path == output_path
+
+
+def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    output_path = tmp_path / "cli-pre-read.md"
+
+    main(["--source-mode", "sample", "--output-path", str(output_path)])
+
+    assert output_path.exists()
+    assert "# Standup Pre-Read: Example Platform Team" in output_path.read_text(encoding="utf-8")
+    assert str(output_path) in capsys.readouterr().out
+
+
+def test_main_rejects_unsupported_source_mode_cleanly(tmp_path: Path) -> None:
+    output_path = tmp_path / "cli-pre-read.md"
+
+    with pytest.raises(SystemExit, match="Unsupported source_mode 'jira_mcp'"):
+        main(["--source-mode", "jira_mcp", "--output-path", str(output_path)])
+
+    assert not output_path.exists()
 
 
 def test_parse_datetime_accepts_utc_z_suffix() -> None:
