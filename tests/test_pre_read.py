@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 import pytest
 
+from standup_pre_read.cli import build_pre_read
 from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read
-from standup_pre_read.normalizer import normalize_all, normalize_github, normalize_jira, normalize_prior
-from standup_pre_read.cli import build_pre_read
-
+from standup_pre_read.normalizer import normalize_all, normalize_github, normalize_jira, normalize_prior, parse_datetime
 
 REQUIRED_SECTIONS = [
     "## Executive Summary",
@@ -69,6 +69,7 @@ def test_generated_pre_read_includes_data_driven_items_and_sources() -> None:
     assert "Follow up with IAM approver for DEMO-103" in markdown
     assert "Confirm documentation acceptance criteria for DEMO-101" not in markdown
     assert "https://jira.example.local/browse/DEMO-104" in markdown
+    assert failing_pr.source_url is not None
     assert failing_pr.source_url in markdown
 
 
@@ -125,20 +126,33 @@ def test_generator_uses_alternate_issue_keys_and_pr_numbers() -> None:
             }
         ],
     }
-    prior = """# Prior\n\n## Carryover From Yesterday\n\n- Follow up on ALT-100 approval. Status: unresolved.\n- Retest OLD-1. Status: resolved.\n"""
+    prior = (
+        "# Prior\n\n"
+        "## Carryover From Yesterday\n\n"
+        "- Follow up on ALT-100 approval. Status: unresolved.\n"
+        "- Retest OLD-1. Status: resolved.\n"
+    )
 
-    markdown = generate_pre_read(normalize_all(jira_data, github_data, prior), "Example Team", stale_pr_days=5, today=date(2026, 6, 16))
+    markdown = generate_pre_read(
+        normalize_all(jira_data, github_data, prior),
+        "Example Team",
+        stale_pr_days=5,
+        today=date(2026, 6, 16),
+    )
 
     assert "ALT-100 is blocked Waiting on storage policy approval" in markdown
     assert "Choose beta-only or all-user rollout. (ALT-101)" in markdown
-    assert "PR #9001 is open for 15 days since June 1, has failing CI, requested review changes, no updates for 8 days linked to ALT-100" in markdown
+    assert (
+        "PR #9001 is open for 15 days since June 1, has failing CI, "
+        "requested review changes, no updates for 8 days linked to ALT-100" in markdown
+    )
     assert "Follow up on ALT-100 approval" in markdown
     assert "Retest OLD-1" not in markdown
     assert "DEMO-" not in markdown
     assert "example-platform-service" not in markdown
 
 
-def test_build_pre_read_writes_configured_output(tmp_path) -> None:
+def test_build_pre_read_writes_configured_output(tmp_path: Path) -> None:
     output_path = tmp_path / "standup-pre-read.md"
     config = Config(output_path=output_path)
 
@@ -152,7 +166,7 @@ def test_config_defaults_to_sample_source_mode() -> None:
     assert Config().source_mode == "sample"
 
 
-def test_build_pre_read_uses_default_sample_source_mode(tmp_path) -> None:
+def test_build_pre_read_uses_default_sample_source_mode(tmp_path: Path) -> None:
     output_path = tmp_path / "standup-pre-read.md"
 
     markdown = build_pre_read(Config(output_path=output_path))
@@ -163,8 +177,21 @@ def test_build_pre_read_uses_default_sample_source_mode(tmp_path) -> None:
     assert "Follow up with IAM approver for DEMO-103" in markdown
 
 
-def test_build_pre_read_rejects_unsupported_source_mode(tmp_path) -> None:
+def test_build_pre_read_rejects_unsupported_source_mode(tmp_path: Path) -> None:
     config = Config(source_mode="jira_mcp", output_path=tmp_path / "standup-pre-read.md")
 
     with pytest.raises(ValueError, match="Unsupported source_mode 'jira_mcp'"):
         build_pre_read(config)
+
+
+def test_parse_datetime_accepts_utc_z_suffix() -> None:
+    parsed = parse_datetime("2026-06-16T12:30:00Z")
+
+    assert parsed is not None
+    assert parsed.isoformat() == "2026-06-16T12:30:00+00:00"
+
+
+def test_build_pre_read_can_create_default_config() -> None:
+    markdown = build_pre_read()
+
+    assert "# Standup Pre-Read: Example Platform Team" in markdown
