@@ -13,6 +13,16 @@ The first build target is a thin-slice MVP:
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data.
 
+## Local Usage
+
+Run the sample-mode generator from a local checkout with:
+
+```bash
+PYTHONPATH=src python -m standup_pre_read.cli
+```
+
+The default configuration uses `source_mode="sample"` and reads the files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP.
+
 ## Repository Structure
 
 ```text
@@ -45,4 +55,3 @@ Read SPEC.md and the files in /examples. Build the thin-slice MVP first:
 - add tests for the generated output structure
 - keep the implementation simple and easy to extend
 ```
-
