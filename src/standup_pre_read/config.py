@@ -7,6 +7,7 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Config:
     team_name: str = "Example Platform Team"
+    source_mode: str = "sample"
     jira_path: Path = Path("examples/jira-sample.json")
     github_path: Path = Path("examples/github-pr-sample.json")
     prior_standup_path: Path = Path("examples/prior-standup.md")

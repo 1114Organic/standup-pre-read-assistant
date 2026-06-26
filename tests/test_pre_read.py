@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read
@@ -144,3 +146,25 @@ def test_build_pre_read_writes_configured_output(tmp_path) -> None:
 
     assert output_path.read_text(encoding="utf-8") == markdown
     assert "# Standup Pre-Read: Example Platform Team" in markdown
+
+
+def test_config_defaults_to_sample_source_mode() -> None:
+    assert Config().source_mode == "sample"
+
+
+def test_build_pre_read_uses_default_sample_source_mode(tmp_path) -> None:
+    output_path = tmp_path / "standup-pre-read.md"
+
+    markdown = build_pre_read(Config(output_path=output_path))
+
+    assert output_path.read_text(encoding="utf-8") == markdown
+    assert "DEMO-101 is done" in markdown
+    assert "PR #502" in markdown
+    assert "Follow up with IAM approver for DEMO-103" in markdown
+
+
+def test_build_pre_read_rejects_unsupported_source_mode(tmp_path) -> None:
+    config = Config(source_mode="jira_mcp", output_path=tmp_path / "standup-pre-read.md")
+
+    with pytest.raises(ValueError, match="Unsupported source_mode 'jira_mcp'"):
+        build_pre_read(config)
