@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from .models import Activity
 
@@ -45,11 +45,11 @@ def _needs_review(pr: Activity) -> bool:
     return pr.status.lower() == "open" and review_state in {"review_required", "changes_requested"}
 
 
-def _format_date(value) -> str:
+def _format_date(value: datetime | None) -> str:
     return value.strftime("%B %-d") if value else "an unknown date"
 
 
-def _issue_summary(issue: Activity, activities: list[Activity]) -> str:
+def _issue_summary(issue: Activity, activities: list[Activity]) -> tuple[str, tuple[Activity, ...]]:
     pr = _first_linked_pr(issue, activities)
     linked = (pr,) if pr else tuple()
     if _is_done(issue.status):
@@ -94,7 +94,12 @@ def _references(activities: list[Activity]) -> list[str]:
     return [f"- {source_id}: {seen[source_id]}" for source_id in sorted(seen)]
 
 
-def _summary(progress: list[GeneratedBullet], blockers: list[GeneratedBullet], decisions: list[GeneratedBullet], risks: list[GeneratedBullet]) -> str:
+def _summary(
+    progress: list[GeneratedBullet],
+    blockers: list[GeneratedBullet],
+    decisions: list[GeneratedBullet],
+    risks: list[GeneratedBullet],
+) -> str:
     parts: list[str] = []
     if progress:
         parts.append(f"{len(progress)} progress item{'s' if len(progress) != 1 else ''} found")
@@ -104,10 +109,19 @@ def _summary(progress: list[GeneratedBullet], blockers: list[GeneratedBullet], d
         parts.append(f"{len(decisions)} decision{'s' if len(decisions) != 1 else ''} need discussion")
     if risks:
         parts.append(f"{len(risks)} risk or aging-work item{'s' if len(risks) != 1 else ''} flagged")
-    return "No significant updates were found in the supplied sources." if not parts else "The generated pre-read found " + ", ".join(parts) + "."
+    return (
+        "No significant updates were found in the supplied sources."
+        if not parts
+        else "The generated pre-read found " + ", ".join(parts) + "."
+    )
 
 
-def _agenda(blockers: list[GeneratedBullet], decisions: list[GeneratedBullet], risks: list[GeneratedBullet], activities: list[Activity]) -> list[str]:
+def _agenda(
+    blockers: list[GeneratedBullet],
+    decisions: list[GeneratedBullet],
+    risks: list[GeneratedBullet],
+    activities: list[Activity],
+) -> list[str]:
     items: list[str] = []
     items.extend(f"Confirm next step: {b.text}" for b in blockers)
     items.extend(f"Make decision: {d.text}" for d in decisions)
@@ -115,7 +129,9 @@ def _agenda(blockers: list[GeneratedBullet], decisions: list[GeneratedBullet], r
     review_prs = [pr for pr in _open_prs(activities) if _needs_review(pr)]
     items.extend(f"Confirm review path for {pr.source_id}: {pr.title}." for pr in review_prs)
     deduped = list(dict.fromkeys(items))[:5]
-    return [f"{idx}. {item}" for idx, item in enumerate(deduped, start=1)] or ["1. No urgent discussion topics found in the supplied sources."]
+    return [f"{idx}. {item}" for idx, item in enumerate(deduped, start=1)] or [
+        "1. No urgent discussion topics found in the supplied sources."
+    ]
 
 
 def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days: int, today: date | None = None) -> str:
@@ -128,21 +144,66 @@ def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days:
             text, sources = _issue_summary(issue, activities)
             progress.append(GeneratedBullet(text.strip().rstrip(".") + ".", sources))
 
-    blockers = [GeneratedBullet(f"{issue.source_id} is blocked {issue.blocker_signal or issue.description or issue.title}", (issue,)) for issue in issues if issue.blocker_signal or issue.status.lower() == "blocked"]
-    decisions = [GeneratedBullet(f"{issue.decision_signal} ({issue.source_id}).", (issue,)) for issue in issues if issue.decision_signal]
-    risks = [risk for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id) if (risk := _pr_risk(pr, today, stale_pr_days))]
+    blockers = [
+        GeneratedBullet(
+            f"{issue.source_id} is blocked {issue.blocker_signal or issue.description or issue.title}", (issue,)
+        )
+        for issue in issues
+        if issue.blocker_signal or issue.status.lower() == "blocked"
+    ]
+    decisions = [
+        GeneratedBullet(f"{issue.decision_signal} ({issue.source_id}).", (issue,))
+        for issue in issues
+        if issue.decision_signal
+    ]
+    risks = [
+        risk
+        for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id)
+        if (risk := _pr_risk(pr, today, stale_pr_days))
+    ]
 
-    carryover = [GeneratedBullet(activity.title, (activity,)) for activity in activities if activity.activity_type in {"prior_blocker", "prior_decision", "prior_carryover"}]
+    carryover = [
+        GeneratedBullet(activity.title, (activity,))
+        for activity in activities
+        if activity.activity_type in {"prior_blocker", "prior_decision", "prior_carryover"}
+    ]
 
     lines = [
-        f"# Standup Pre-Read: {team_name}", "", f"Generated: {today.isoformat()}", "",
-        "## Executive Summary", "", _summary(progress, blockers, decisions, risks), "",
-        "## Progress Since Last Standup", "", *_render_section(progress, "No confirmed progress found in the supplied sources."), "",
-        "## Blockers Needing Action", "", *_render_section(blockers, "No active blockers found in the supplied sources."), "",
-        "## Decisions Needed", "", *_render_section(decisions, "No open decisions found in the supplied sources."), "",
-        "## Risks and Aging Work", "", *_render_section(risks, "No stale or risky pull requests found in the supplied sources."), "",
-        "## Carryover From Yesterday", "", *_render_section(carryover, "No unresolved carryover found in the supplied prior standup."), "",
-        "## Suggested Standup Agenda", "", *_agenda(blockers, decisions, risks, activities), "",
-        "## Source References", "", *_references(activities), "",
+        f"# Standup Pre-Read: {team_name}",
+        "",
+        f"Generated: {today.isoformat()}",
+        "",
+        "## Executive Summary",
+        "",
+        _summary(progress, blockers, decisions, risks),
+        "",
+        "## Progress Since Last Standup",
+        "",
+        *_render_section(progress, "No confirmed progress found in the supplied sources."),
+        "",
+        "## Blockers Needing Action",
+        "",
+        *_render_section(blockers, "No active blockers found in the supplied sources."),
+        "",
+        "## Decisions Needed",
+        "",
+        *_render_section(decisions, "No open decisions found in the supplied sources."),
+        "",
+        "## Risks and Aging Work",
+        "",
+        *_render_section(risks, "No stale or risky pull requests found in the supplied sources."),
+        "",
+        "## Carryover From Yesterday",
+        "",
+        *_render_section(carryover, "No unresolved carryover found in the supplied prior standup."),
+        "",
+        "## Suggested Standup Agenda",
+        "",
+        *_agenda(blockers, decisions, risks, activities),
+        "",
+        "## Source References",
+        "",
+        *_references(activities),
+        "",
     ]
     return "\n".join(lines)

@@ -15,13 +15,33 @@ Live APIs, Teams notifications, Harness, and EKS deployment are intentionally de
 
 ## Local Usage
 
+Create an isolated development environment and install the project with its test/lint tooling:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+```
+
 Run the sample-mode generator from a local checkout with:
 
 ```bash
 PYTHONPATH=src python -m standup_pre_read.cli
+# or, after installation:
+standup-pre-read
 ```
 
 The default configuration uses `source_mode="sample"` and reads the files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP.
+
+## Quality Checks
+
+Before opening a pull request, run the same local checks used by contributors:
+
+```bash
+python -m pytest
+python -m ruff check .
+python -m mypy
+```
 
 ## Repository Structure
 

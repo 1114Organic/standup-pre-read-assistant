@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from .collectors import extract_prior_items
-from .models import Activity
+from .models import Activity, ActivityType
 
 
 def parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
-    return datetime.fromisoformat(value)
+    normalized = value.removesuffix("Z") + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized)
 
 
 def normalize_jira(data: dict[str, Any]) -> list[Activity]:
@@ -87,7 +88,7 @@ def normalize_prior(markdown: str) -> list[Activity]:
                 owner=None,
                 team=None,
                 project=None,
-                activity_type=item["type"],
+                activity_type=cast(ActivityType, item["type"]),
                 status=item["status"],
                 timestamp=None,
                 related_work_items=(item["source_id"],) if item["source_id"] != "prior-standup" else tuple(),
