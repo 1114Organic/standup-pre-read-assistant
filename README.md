@@ -2,6 +2,8 @@
 
 AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
 
+For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
 The first build target is a thin-slice MVP: 
 
 1. Read sample Jira JSON.
