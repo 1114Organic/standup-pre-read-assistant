@@ -41,9 +41,27 @@ standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 
 The default configuration reads the sample files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
+## Makefile Commands
+
+Use these convenience targets for the local workflow:
+
+```bash
+make test       # runs python -m pytest
+make lint       # runs python -m ruff check .
+make typecheck  # runs python -m mypy
+make demo       # runs the sample CLI and writes output/standup-pre-read.md
+make check      # runs test, lint, and typecheck
+```
+
 ## Quality Checks
 
 Before opening a pull request, run the same local checks used by contributors:
+
+```bash
+make check
+```
+
+The equivalent direct commands are:
 
 ```bash
 python -m pytest
