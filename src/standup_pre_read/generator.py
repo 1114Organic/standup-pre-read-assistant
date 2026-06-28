@@ -86,6 +86,81 @@ def _render_section(bullets: list[GeneratedBullet], empty: str) -> list[str]:
     return [bullet.render() for bullet in bullets] or [f"- {empty}"]
 
 
+def _source_reference(sources: tuple[Activity, ...]) -> str:
+    refs = ", ".join(source.source_id for source in sources if source.source_id)
+    return refs or "supplied data"
+
+
+def _question(text: str, sources: tuple[Activity, ...]) -> str:
+    return f"- {text.rstrip('.?')}? Source: {_source_reference(sources)}."
+
+
+def _standup_questions(
+    blockers: list[GeneratedBullet],
+    decisions: list[GeneratedBullet],
+    risks: list[GeneratedBullet],
+    carryover: list[GeneratedBullet],
+    activities: list[Activity],
+) -> list[str]:
+    questions: list[tuple[str, tuple[Activity, ...]]] = []
+
+    for blocker in blockers:
+        source = blocker.sources[0] if blocker.sources else None
+        subject = source.source_id if source else "this blocker"
+        detail = source.blocker_signal or source.description or source.title if source else blocker.text
+        questions.append((f"What action is needed today to unblock {subject}: {detail}", blocker.sources))
+
+    for risk in risks:
+        source = risk.sources[0] if risk.sources else None
+        subject = source.source_id if source else "this risky pull request"
+        questions.append((f"What is the next step to reduce risk on {subject}: {risk.text}", risk.sources))
+
+    for decision in decisions:
+        source = decision.sources[0] if decision.sources else None
+        subject = source.source_id if source else "this decision"
+        detail = source.decision_signal if source and source.decision_signal else decision.text
+        questions.append((f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources))
+
+    for item in carryover:
+        source = item.sources[0] if item.sources else None
+        subject = source.source_id if source and source.source_id != "prior-standup" else "prior standup carryover"
+        questions.append(
+            (
+                f"Should we keep carrying over {subject}, and what changed since the last standup: {item.text}",
+                item.sources,
+            )
+        )
+
+    for activity in activities:
+        if activity.activity_type not in {"jira_issue", "github_pr"}:
+            continue
+        missing: list[str] = []
+        if not activity.owner:
+            missing.append("owner")
+        if not activity.status or activity.status.lower() == "unknown":
+            missing.append("status")
+        if missing:
+            questions.append(
+                (
+                    f"Who owns {activity.source_id} and what is its current status; missing {', '.join(missing)}",
+                    (activity,),
+                )
+            )
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for text, sources in questions:
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(_question(text, sources))
+        if len(deduped) == 7:
+            break
+
+    return deduped or ["- No high-value standup questions found in the supplied sources."]
+
+
 def _references(activities: list[Activity]) -> list[str]:
     seen: dict[str, str] = {}
     for activity in activities:
@@ -200,6 +275,10 @@ def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days:
         "## Suggested Standup Agenda",
         "",
         *_agenda(blockers, decisions, risks, activities),
+        "",
+        "## Suggested Standup Questions",
+        "",
+        *_standup_questions(blockers, decisions, risks, carryover, activities),
         "",
         "## Source References",
         "",

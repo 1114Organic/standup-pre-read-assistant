@@ -8,7 +8,7 @@ The current MVP generates a local markdown standup pre-read from sample input fi
 
 - Loads sample issue data, sample pull request data, and prior standup notes from the repository.
 - Normalizes those inputs into a common activity model.
-- Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, and source references.
+- Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, concise source-backed standup questions, and source references.
 - Writes the generated draft to a local output path, defaulting to `output/standup-pre-read.md`.
 - Fails fast with a clear CLI error when an unsupported source mode is requested.
 
@@ -90,7 +90,7 @@ make check
 - Linting with `ruff`.
 - Static type checking with `mypy`.
 
-The test suite verifies the generated output structure, key data-driven content, source references, configurable output writing, CLI argument parsing, default sample-mode behavior, and clean failure for unsupported source modes.
+The test suite verifies the generated output structure, key data-driven content, source-backed standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, and clean failure for unsupported source modes.
 
 ## 6. Suggested Next Milestones
 
@@ -100,7 +100,7 @@ Expand the sample inputs to cover more realistic edge cases, such as multiple re
 
 ### Standup Question Mode
 
-Add a mode that outputs suggested questions for the standup facilitator, such as who needs help, which decisions are blocking progress, and which stale items need explicit follow-up.
+Standup question mode is now part of the markdown MVP output. A future enhancement could expose the same source-backed questions as a separate CLI/output mode for facilitators who only need the question list.
 
 ### Structured Output JSON
 

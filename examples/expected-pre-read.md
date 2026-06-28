@@ -40,6 +40,16 @@ The generated pre-read found 4 progress items found, 1 blocker need action, 1 de
 4. Confirm review path for PR #501: Add usage event publisher.
 5. Confirm review path for PR #502: Fix platform search scoring configuration.
 
+## Suggested Standup Questions
+
+- What action is needed today to unblock DEMO-103: Waiting on IAM approval? Source: DEMO-103.
+- What is the next step to reduce risk on PR #501: PR #501 is requested review changes linked to DEMO-102? Source: PR #501.
+- What is the next step to reduce risk on PR #502: PR #502 is open for 6 days since June 10, has failing CI linked to DEMO-104? Source: PR #502.
+- Who can make or facilitate the decision for DEMO-104: Decide whether search relevance tuning is global or workspace-only? Source: DEMO-104.
+- Should we keep carrying over DEMO-103, and what changed since the last standup: DEMO-103: Service account permissions need IAM approval before the data exporter can be tested? Source: DEMO-103.
+- Should we keep carrying over DEMO-104, and what changed since the last standup: DEMO-104: Decide whether platform search relevance tuning should apply globally or only to workspace search? Source: DEMO-104.
+- Should we keep carrying over DEMO-103, and what changed since the last standup: Follow up with IAM approver for DEMO-103? Source: DEMO-103.
+
 ## Source References
 
 - DEMO-101: https://jira.example.local/browse/DEMO-101
