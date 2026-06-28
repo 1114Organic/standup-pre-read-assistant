@@ -9,7 +9,7 @@ The first build target is a thin-slice MVP:
 1. Read sample Jira JSON.
 2. Read sample GitHub pull request JSON.
 3. Read prior standup notes.
-4. Generate a markdown standup pre-read.
+4. Generate a markdown standup pre-read, including concise suggested standup questions.
 5. Save the draft locally.
 6. Add tests that verify the output structure.
 
@@ -41,7 +41,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli --source-mode sample --output-pat
 standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 ```
 
-The default configuration reads the sample files in `examples/`. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
+The default configuration reads the sample files in `examples/`. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
 ## Makefile Commands
 

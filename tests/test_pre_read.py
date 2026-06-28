@@ -9,6 +9,7 @@ from standup_pre_read.cli import build_pre_read, main, parse_args
 from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read
+from standup_pre_read.models import Activity
 from standup_pre_read.normalizer import normalize_all, normalize_github, normalize_jira, normalize_prior, parse_datetime
 
 REQUIRED_SECTIONS = [
@@ -19,6 +20,7 @@ REQUIRED_SECTIONS = [
     "## Risks and Aging Work",
     "## Carryover From Yesterday",
     "## Suggested Standup Agenda",
+    "## Suggested Standup Questions",
     "## Source References",
 ]
 
@@ -71,6 +73,100 @@ def test_generated_pre_read_includes_data_driven_items_and_sources() -> None:
     assert "https://jira.example.local/browse/DEMO-104" in markdown
     assert failing_pr.source_url is not None
     assert failing_pr.source_url in markdown
+
+
+def test_suggested_questions_cover_standup_question_mode_signals() -> None:
+    markdown = _sample_markdown()
+
+    assert "## Suggested Standup Questions" in markdown
+    assert "What action is needed today to unblock DEMO-103: Waiting on IAM approval? Source: DEMO-103." in markdown
+    assert "What is the next step to reduce risk on PR #502:" in markdown
+    assert "Source: PR #502." in markdown
+    assert (
+        "Who can make or facilitate the decision for DEMO-104: "
+        "Decide whether search relevance tuning is global or workspace-only? Source: DEMO-104."
+    ) in markdown
+    assert "Should we keep carrying over DEMO-103" in markdown
+    assert "Source: DEMO-103." in markdown
+
+
+def test_suggested_questions_are_data_driven_and_detect_missing_owner_status() -> None:
+    activities = [
+        Activity(
+            source_system="issue_tracker",
+            source_id="ALT-200",
+            source_url="https://example.invalid/issues/ALT-200",
+            title="Unowned blocked work",
+            description="Needs dependency approval.",
+            owner=None,
+            team=None,
+            project=None,
+            activity_type="jira_issue",
+            status="Blocked",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            related_work_items=("ALT-200",),
+            blocker_signal="Needs dependency approval.",
+        ),
+        Activity(
+            source_system="source_host",
+            source_id="PR #77",
+            source_url="https://example.invalid/pulls/77",
+            title="Stale risky change",
+            description="Waiting for review.",
+            owner="contributor",
+            team=None,
+            project="sample-repo",
+            activity_type="github_pr",
+            status="open",
+            timestamp=parse_datetime("2026-06-01T12:00:00+00:00"),
+            related_work_items=("ALT-200",),
+            updated_timestamp=parse_datetime("2026-06-02T12:00:00+00:00"),
+            ci_state="passing",
+            review_state="changes_requested",
+        ),
+        Activity(
+            source_system="issue_tracker",
+            source_id="ALT-201",
+            source_url="https://example.invalid/issues/ALT-201",
+            title="Choose launch option",
+            description="Implementation is pending scope choice.",
+            owner="facilitator",
+            team=None,
+            project=None,
+            activity_type="jira_issue",
+            status="In Progress",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            related_work_items=("ALT-201",),
+            decision_signal="Choose narrow or broad launch.",
+        ),
+        Activity(
+            source_system="prior_standup",
+            source_id="ALT-202",
+            source_url=None,
+            title="Follow up on unresolved dependency.",
+            description="Follow up on unresolved dependency.",
+            owner=None,
+            team=None,
+            project=None,
+            activity_type="prior_carryover",
+            status="unresolved",
+            timestamp=None,
+            related_work_items=("ALT-202",),
+        ),
+    ]
+
+    markdown = generate_pre_read(activities, "Example Team", stale_pr_days=5, today=date(2026, 6, 16))
+
+    assert "What action is needed today to unblock ALT-200: Needs dependency approval? Source: ALT-200." in markdown
+    assert "What is the next step to reduce risk on PR #77:" in markdown
+    assert (
+        "Who can make or facilitate the decision for ALT-201: Choose narrow or broad launch? Source: ALT-201."
+        in markdown
+    )
+    assert "Should we keep carrying over ALT-202" in markdown
+    assert "Who owns ALT-200 and what is its current status; missing owner? Source: ALT-200." in markdown
+    assert "DEMO-" not in markdown
+    assert "example-platform-service" not in markdown
 
 
 def test_generator_uses_alternate_issue_keys_and_pr_numbers() -> None:
