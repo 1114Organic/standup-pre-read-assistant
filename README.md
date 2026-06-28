@@ -20,15 +20,15 @@ Live APIs, Teams notifications, Harness, and EKS deployment are intentionally de
 Create an isolated development environment and install the project with its test/lint tooling:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python3 -m pip install -e ".[dev]"
 ```
 
 Run the sample-mode generator from a local checkout with:
 
 ```bash
-PYTHONPATH=src python -m standup_pre_read.cli
+PYTHONPATH=src python3 -m standup_pre_read.cli
 # or, after installation:
 standup-pre-read
 ```
@@ -36,7 +36,7 @@ standup-pre-read
 The CLI defaults to `--source-mode sample` and writes `output/standup-pre-read.md`. You can make those defaults explicit or choose a different output file:
 
 ```bash
-PYTHONPATH=src python -m standup_pre_read.cli --source-mode sample --output-path output/custom-pre-read.md
+PYTHONPATH=src python3 -m standup_pre_read.cli --source-mode sample --output-path output/custom-pre-read.md
 # or, after installation:
 standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 ```
@@ -45,12 +45,12 @@ The default configuration reads the sample files in `examples/`. Live Jira, Jira
 
 ## Makefile Commands
 
-Use these convenience targets for the local workflow:
+Use these convenience targets for the local workflow. The Makefile defaults to `python3`; use an override such as `PYTHON=python make demo` if your environment needs a different interpreter.
 
 ```bash
-make test       # runs python -m pytest
-make lint       # runs python -m ruff check .
-make typecheck  # runs python -m mypy
+make test       # runs python3 -m pytest by default
+make lint       # runs python3 -m ruff check . by default
+make typecheck  # runs python3 -m mypy by default
 make demo       # runs the sample CLI and writes output/standup-pre-read.md
 make check      # runs test, lint, and typecheck
 ```
@@ -66,9 +66,9 @@ make check
 The equivalent direct commands are:
 
 ```bash
-python -m pytest
-python -m ruff check .
-python -m mypy
+python3 -m pytest
+python3 -m ruff check .
+python3 -m mypy
 ```
 
 ## Repository Structure
