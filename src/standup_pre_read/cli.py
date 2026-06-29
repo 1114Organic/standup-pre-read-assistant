@@ -28,13 +28,37 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         help="Source connector mode to use. Currently supported: sample.",
     )
     parser.add_argument(
+        "--jira-path",
+        type=Path,
+        default=Config.jira_path,
+        help="Path to the sample Jira JSON file.",
+    )
+    parser.add_argument(
+        "--github-path",
+        type=Path,
+        default=Config.github_path,
+        help="Path to the sample GitHub pull request JSON file.",
+    )
+    parser.add_argument(
+        "--prior-standup-path",
+        type=Path,
+        default=Config.prior_standup_path,
+        help="Path to the prior standup markdown file.",
+    )
+    parser.add_argument(
         "--output-path",
         type=Path,
         default=Config.output_path,
         help="Path where the generated markdown pre-read should be written.",
     )
     args = parser.parse_args(argv)
-    return Config(source_mode=args.source_mode, output_path=args.output_path)
+    return Config(
+        source_mode=args.source_mode,
+        jira_path=args.jira_path,
+        github_path=args.github_path,
+        prior_standup_path=args.prior_standup_path,
+        output_path=args.output_path,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> None:

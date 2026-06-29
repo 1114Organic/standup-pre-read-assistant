@@ -296,6 +296,59 @@ def test_parse_args_accepts_source_mode_and_output_path(tmp_path: Path) -> None:
     assert config.output_path == output_path
 
 
+def test_parse_args_accepts_alternate_sample_paths(tmp_path: Path) -> None:
+    output_path = tmp_path / "rich-pre-read.md"
+
+    config = parse_args([
+        "--source-mode",
+        "sample",
+        "--jira-path",
+        "examples/jira-rich-sample.json",
+        "--github-path",
+        "examples/github-pr-rich-sample.json",
+        "--prior-standup-path",
+        "examples/prior-standup-rich.md",
+        "--output-path",
+        str(output_path),
+    ])
+
+    assert config.source_mode == "sample"
+    assert config.jira_path == Path("examples/jira-rich-sample.json")
+    assert config.github_path == Path("examples/github-pr-rich-sample.json")
+    assert config.prior_standup_path == Path("examples/prior-standup-rich.md")
+    assert config.output_path == output_path
+
+
+def test_rich_sample_scenario_generates_expected_demo_signals(tmp_path: Path) -> None:
+    output_path = tmp_path / "rich-pre-read.md"
+
+    markdown = build_pre_read(
+        Config(
+            jira_path=Path("examples/jira-rich-sample.json"),
+            github_path=Path("examples/github-pr-rich-sample.json"),
+            prior_standup_path=Path("examples/prior-standup-rich.md"),
+            output_path=output_path,
+        )
+    )
+
+    assert output_path.read_text(encoding="utf-8") == markdown
+    assert "SAMPLE-210 is done" in markdown
+    assert "SAMPLE-211 moved to review" in markdown
+    assert "SAMPLE-212 is blocked Waiting on service credential approval" in markdown
+    assert "Decide whether notifications launch to pilot users or all workspaces. (SAMPLE-213)." in markdown
+    assert "PR #1202 is open for" in markdown
+    assert "has failing CI" in markdown
+    assert "no updates for" in markdown
+    assert "Follow up on SAMPLE-212 credential approval" in markdown
+    assert "Confirm SAMPLE-214 owner and current status" in markdown
+    assert "Verify SAMPLE-210 checklist acceptance" not in markdown
+    assert "Who owns SAMPLE-214 and what is its current status; missing owner" in markdown
+    assert "What action is needed today to unblock SAMPLE-212" in markdown
+    assert "Who can make or facilitate the decision for SAMPLE-213" in markdown
+    assert "Should we keep carrying over SAMPLE-214" in markdown
+    assert "DEMO-" not in markdown
+    assert "example-platform-service" not in markdown
+
 def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     output_path = tmp_path / "cli-pre-read.md"
 
