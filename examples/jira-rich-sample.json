@@ -1,0 +1,71 @@
+{
+  "team": "Example Delivery Team",
+  "window": {
+    "start": "2026-06-15T09:00:00+00:00",
+    "end": "2026-06-16T09:00:00+00:00"
+  },
+  "issues": [
+    {
+      "key": "SAMPLE-210",
+      "title": "Publish onboarding checklist",
+      "status": "Done",
+      "assignee": "Writer One",
+      "updated": "2026-06-15T10:20:00+00:00",
+      "sprint": "Iteration 4",
+      "labels": ["documentation", "onboarding"],
+      "url": "https://issues.example.invalid/browse/SAMPLE-210",
+      "summary": "Checklist updates were completed and accepted by the reviewer.",
+      "blocker": false
+    },
+    {
+      "key": "SAMPLE-211",
+      "title": "Add usage summary endpoint",
+      "status": "In Review",
+      "assignee": "Engineer One",
+      "updated": "2026-06-15T13:05:00+00:00",
+      "sprint": "Iteration 4",
+      "labels": ["api", "reporting"],
+      "url": "https://issues.example.invalid/browse/SAMPLE-211",
+      "summary": "Implementation is complete and ready for API review.",
+      "blocker": false
+    },
+    {
+      "key": "SAMPLE-212",
+      "title": "Enable export job in staging",
+      "status": "Blocked",
+      "assignee": "Engineer Two",
+      "updated": "2026-06-15T14:15:00+00:00",
+      "sprint": "Iteration 4",
+      "labels": ["export", "staging"],
+      "url": "https://issues.example.invalid/browse/SAMPLE-212",
+      "summary": "Validation cannot continue until the service credential request is approved.",
+      "blocker": true,
+      "blocked_reason": "Waiting on service credential approval."
+    },
+    {
+      "key": "SAMPLE-213",
+      "title": "Choose notification rollout scope",
+      "status": "In Progress",
+      "assignee": "Product Partner",
+      "updated": "2026-06-15T15:30:00+00:00",
+      "sprint": "Iteration 4",
+      "labels": ["notifications", "rollout"],
+      "url": "https://issues.example.invalid/browse/SAMPLE-213",
+      "summary": "Implementation is underway, but rollout criteria need confirmation.",
+      "blocker": false,
+      "decision_needed": "Decide whether notifications launch to pilot users or all workspaces."
+    },
+    {
+      "key": "SAMPLE-214",
+      "title": "Clarify analytics ownership",
+      "status": "Unknown",
+      "assignee": null,
+      "updated": "2026-06-15T16:00:00+00:00",
+      "sprint": "Iteration 4",
+      "labels": ["analytics"],
+      "url": "https://issues.example.invalid/browse/SAMPLE-214",
+      "summary": "The next owner and current status need confirmation before work can be planned.",
+      "blocker": false
+    }
+  ]
+}

@@ -43,6 +43,19 @@ standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 
 The default configuration reads the sample files in `examples/`. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
+To run the richer demo-data scenario, point the same sample-mode CLI at the alternate example files:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --source-mode sample \
+  --jira-path examples/jira-rich-sample.json \
+  --github-path examples/github-pr-rich-sample.json \
+  --prior-standup-path examples/prior-standup-rich.md \
+  --output-path output/rich-standup-pre-read.md
+```
+
+The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.
+
 ## Makefile Commands
 
 Use these convenience targets for the local workflow. The Makefile defaults to `python3`; use an override such as `PYTHON=python make demo` if your environment needs a different interpreter.
@@ -85,6 +98,9 @@ python3 -m mypy
 │   ├── jira-sample.json
 │   ├── github-pr-sample.json
 │   ├── prior-standup.md
+│   ├── jira-rich-sample.json
+│   ├── github-pr-rich-sample.json
+│   ├── prior-standup-rich.md
 │   └── expected-pre-read.md
 ├── src
 └── tests

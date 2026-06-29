@@ -121,16 +121,6 @@ def _standup_questions(
         detail = source.decision_signal if source and source.decision_signal else decision.text
         questions.append((f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources))
 
-    for item in carryover:
-        source = item.sources[0] if item.sources else None
-        subject = source.source_id if source and source.source_id != "prior-standup" else "prior standup carryover"
-        questions.append(
-            (
-                f"Should we keep carrying over {subject}, and what changed since the last standup: {item.text}",
-                item.sources,
-            )
-        )
-
     for activity in activities:
         if activity.activity_type not in {"jira_issue", "github_pr"}:
             continue
@@ -147,6 +137,16 @@ def _standup_questions(
                 )
             )
 
+    for item in carryover:
+        source = item.sources[0] if item.sources else None
+        subject = source.source_id if source and source.source_id != "prior-standup" else "prior standup carryover"
+        questions.append(
+            (
+                f"Should we keep carrying over {subject}, and what changed since the last standup: {item.text}",
+                item.sources,
+            )
+        )
+
     deduped: list[str] = []
     seen: set[str] = set()
     for text, sources in questions:
@@ -155,7 +155,7 @@ def _standup_questions(
             continue
         seen.add(key)
         deduped.append(_question(text, sources))
-        if len(deduped) == 7:
+        if len(deduped) == 9:
             break
 
     return deduped or ["- No high-value standup questions found in the supplied sources."]

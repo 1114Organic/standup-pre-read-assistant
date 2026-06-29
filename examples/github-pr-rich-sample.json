@@ -1,0 +1,51 @@
+{
+  "repositories": [
+    {
+      "name": "sample-service",
+      "pull_requests": [
+        {
+          "number": 1201,
+          "title": "Add usage summary endpoint",
+          "author": "engineer-one",
+          "state": "open",
+          "review_state": "changes_requested",
+          "created": "2026-06-13T09:00:00+00:00",
+          "updated": "2026-06-15T13:10:00+00:00",
+          "merged": false,
+          "url": "https://github.com/example/sample-service/pull/1201",
+          "linked_issues": ["SAMPLE-211"],
+          "ci_state": "passing",
+          "summary": "Review requested a small response-shape change."
+        },
+        {
+          "number": 1202,
+          "title": "Update notification routing rules",
+          "author": "engineer-three",
+          "state": "open",
+          "review_state": "review_required",
+          "created": "2026-06-07T11:30:00+00:00",
+          "updated": "2026-06-09T12:00:00+00:00",
+          "merged": false,
+          "url": "https://github.com/example/sample-service/pull/1202",
+          "linked_issues": ["SAMPLE-213"],
+          "ci_state": "failing",
+          "summary": "Routing change is stale and failing integration tests."
+        },
+        {
+          "number": 1203,
+          "title": "Publish onboarding checklist",
+          "author": "writer-one",
+          "state": "closed",
+          "review_state": "approved",
+          "created": "2026-06-14T08:00:00+00:00",
+          "updated": "2026-06-15T10:25:00+00:00",
+          "merged": true,
+          "url": "https://github.com/example/sample-service/pull/1203",
+          "linked_issues": ["SAMPLE-210"],
+          "ci_state": "passing",
+          "summary": "Documentation update merged after approval."
+        }
+      ]
+    }
+  ]
+}
