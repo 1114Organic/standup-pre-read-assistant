@@ -4,7 +4,17 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
-ActivityType = Literal["jira_issue", "github_pr", "prior_blocker", "prior_decision", "prior_carryover"]
+ActivityType = Literal[
+    "jira_issue",
+    "github_pr",
+    "prior_blocker",
+    "prior_decision",
+    "prior_carryover",
+    "chat_blocker",
+    "chat_decision",
+    "chat_follow_up",
+    "chat_signal",
+]
 
 
 @dataclass(frozen=True)

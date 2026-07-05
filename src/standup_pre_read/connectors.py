@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from .collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
+from .collectors import load_chat_sample, load_github_pr_sample, load_jira_sample, load_prior_standup
 from .config import Config
 
 
@@ -12,6 +12,7 @@ class SourceData:
     jira_data: dict[str, Any]
     github_data: dict[str, Any]
     prior_markdown: str
+    chat_data: dict[str, Any]
 
 
 class SourceConnector(Protocol):
@@ -28,6 +29,7 @@ class SampleSourceConnector:
             jira_data=load_jira_sample(self.config.jira_path),
             github_data=load_github_pr_sample(self.config.github_path),
             prior_markdown=load_prior_standup(self.config.prior_standup_path),
+            chat_data=load_chat_sample(self.config.chat_path),
         )
 
 

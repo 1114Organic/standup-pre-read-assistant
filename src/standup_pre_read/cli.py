@@ -14,7 +14,9 @@ from .normalizer import normalize_all
 def build_pre_read(config: Config | None = None) -> str:
     config = config or Config()
     source_data = source_connector_for(config).load()
-    activities = normalize_all(source_data.jira_data, source_data.github_data, source_data.prior_markdown)
+    activities = normalize_all(
+        source_data.jira_data, source_data.github_data, source_data.prior_markdown, source_data.chat_data
+    )
     document = generate_pre_read_document(
         activities,
         config.team_name,
@@ -59,6 +61,12 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         help="Path to the prior standup markdown file.",
     )
     parser.add_argument(
+        "--chat-path",
+        type=Path,
+        default=Config.chat_path,
+        help="Optional path to a sample chat JSON file.",
+    )
+    parser.add_argument(
         "--output-path",
         type=Path,
         default=Config.output_path,
@@ -76,6 +84,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         jira_path=args.jira_path,
         github_path=args.github_path,
         prior_standup_path=args.prior_standup_path,
+        chat_path=args.chat_path,
         output_path=args.output_path,
         json_output_path=args.json_output_path,
     )

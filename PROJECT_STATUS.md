@@ -6,9 +6,9 @@ This document summarizes the current generic MVP state for the Standup Pre-Read 
 
 The current MVP generates a local markdown standup pre-read from sample input files. In sample mode, it:
 
-- Loads sample issue data, sample pull request data, and prior standup notes from the repository.
+- Loads sample issue data, sample pull request data, optional sample chat messages, and prior standup notes from the repository.
 - Normalizes those inputs into a common activity model.
-- Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, concise source-backed standup questions, and source references.
+- Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, concise source-backed standup questions, and source references, including useful chat-derived signals when a chat sample is supplied.
 - Optionally writes a structured JSON version of the same pre-read content for downstream tools.
 - Writes the generated markdown draft to a local output path, defaulting to `output/standup-pre-read.md`.
 - Fails fast with a clear CLI error when an unsupported source mode is requested.
@@ -48,6 +48,7 @@ To also write structured JSON output:
 ```bash
 PYTHONPATH=src python -m standup_pre_read.cli \
   --source-mode sample \
+  --chat-path examples/chat-rich-sample.json \
   --output-path output/custom-pre-read.md \
   --json-output-path output/custom-pre-read.json
 ```
@@ -67,6 +68,7 @@ Supported today:
 - Sample issue JSON stored in the repository.
 - Sample pull request JSON stored in the repository.
 - Sample prior standup markdown stored in the repository.
+- Optional local sample Slack/Teams-style chat JSON stored in the repository via `--chat-path`.
 
 The only supported source mode is `sample`. The source loading layer is intentionally separated from normalization and generation so future connectors can be added without rewriting the whole flow.
 
@@ -77,7 +79,7 @@ The MVP intentionally does not include:
 - Live issue tracker API calls.
 - Live source hosting API calls.
 - MCP-backed live connectors.
-- Chat, email, or notification delivery.
+- Live chat, email, or notification delivery. Local sample chat JSON ingestion is supported for MVP validation.
 - Deployment automation or cloud runtime configuration.
 - Authentication, authorization, or secret management for external services.
 - Persistent storage beyond writing the generated markdown file locally.
@@ -102,7 +104,7 @@ make check
 - Linting with `ruff`.
 - Static type checking with `mypy`.
 
-The test suite verifies the generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, and clean failure for unsupported source modes.
+The test suite verifies the generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, chat sample loading and generation, and clean failure for unsupported source modes.
 
 ## 6. Suggested Next Milestones
 

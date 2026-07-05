@@ -11,6 +11,7 @@ class Config:
     jira_path: Path = Path("examples/jira-sample.json")
     github_path: Path = Path("examples/github-pr-sample.json")
     prior_standup_path: Path = Path("examples/prior-standup.md")
+    chat_path: Path | None = None
     output_path: Path = Path("output/standup-pre-read.md")
     json_output_path: Path | None = None
     stale_pr_days: int = 5

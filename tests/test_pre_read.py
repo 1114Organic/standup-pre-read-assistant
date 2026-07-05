@@ -7,11 +7,18 @@ from pathlib import Path
 import pytest
 
 from standup_pre_read.cli import build_pre_read, main, parse_args
-from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
+from standup_pre_read.collectors import load_chat_sample, load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read, generate_pre_read_document
 from standup_pre_read.models import Activity
-from standup_pre_read.normalizer import normalize_all, normalize_github, normalize_jira, normalize_prior, parse_datetime
+from standup_pre_read.normalizer import (
+    normalize_all,
+    normalize_chat,
+    normalize_github,
+    normalize_jira,
+    normalize_prior,
+    parse_datetime,
+)
 
 REQUIRED_SECTIONS = [
     "## Executive Summary",
@@ -33,6 +40,66 @@ def _sample_markdown() -> str:
         load_prior_standup(Config.prior_standup_path),
     )
     return generate_pre_read(activities, "Example Platform Team", stale_pr_days=5, today=date(2026, 6, 16))
+
+
+def test_chat_sample_data_can_be_loaded_and_normalized() -> None:
+    chat_data = load_chat_sample(Path("examples/chat-rich-sample.json"))
+    activities = normalize_chat(chat_data)
+
+    assert len(activities) == 4
+    assert {activity.activity_type for activity in activities} == {
+        "chat_blocker",
+        "chat_decision",
+        "chat_follow_up",
+        "chat_signal",
+    }
+    assert all(activity.source_system == "chat" for activity in activities)
+    assert not any("Good morning team" in activity.description for activity in activities)
+
+
+def test_chat_signals_appear_without_noisy_chatter_and_include_sources(tmp_path: Path) -> None:
+    output_path = tmp_path / "chat-pre-read.md"
+
+    markdown = build_pre_read(
+        Config(
+            jira_path=Path("examples/jira-rich-sample.json"),
+            github_path=Path("examples/github-pr-rich-sample.json"),
+            prior_standup_path=Path("examples/prior-standup-rich.md"),
+            chat_path=Path("examples/chat-rich-sample.json"),
+            output_path=output_path,
+        )
+    )
+
+    assert "Chat blocker: Blocked on SAMPLE-212" in markdown
+    assert "Source: chat-001." in markdown
+    assert "Chat decision requested: Decision needed for SAMPLE-213" in markdown
+    assert "Source: chat-002." in markdown
+    assert "Follow up with the release checklist owner for SAMPLE-214" in markdown
+    assert "Who can clarify ownership or next steps from chat: Who owns SAMPLE-214 now" in markdown
+    assert "https://chat.example.local/archives/sample-team-standup/p001" in markdown
+    assert "Good morning team" not in markdown
+
+
+def test_json_output_includes_chat_derived_items(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "chat-pre-read.md"
+    json_output_path = tmp_path / "chat-pre-read.json"
+
+    build_pre_read(
+        Config(
+            jira_path=Path("examples/jira-rich-sample.json"),
+            github_path=Path("examples/github-pr-rich-sample.json"),
+            prior_standup_path=Path("examples/prior-standup-rich.md"),
+            chat_path=Path("examples/chat-rich-sample.json"),
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert any("chat-001" in item["source_refs"] for item in payload["blockers"])
+    assert any("chat-002" in item["source_refs"] for item in payload["decisions"])
+    assert any("chat-003" in item["source_refs"] for item in payload["carryover"])
+    assert any(reference["source_system"] == "chat" for reference in payload["source_references"])
 
 
 def test_generated_pre_read_includes_required_sections() -> None:
@@ -300,23 +367,28 @@ def test_parse_args_accepts_source_mode_and_output_path(tmp_path: Path) -> None:
 def test_parse_args_accepts_alternate_sample_paths(tmp_path: Path) -> None:
     output_path = tmp_path / "rich-pre-read.md"
 
-    config = parse_args([
-        "--source-mode",
-        "sample",
-        "--jira-path",
-        "examples/jira-rich-sample.json",
-        "--github-path",
-        "examples/github-pr-rich-sample.json",
-        "--prior-standup-path",
-        "examples/prior-standup-rich.md",
-        "--output-path",
-        str(output_path),
-    ])
+    config = parse_args(
+        [
+            "--source-mode",
+            "sample",
+            "--jira-path",
+            "examples/jira-rich-sample.json",
+            "--github-path",
+            "examples/github-pr-rich-sample.json",
+            "--prior-standup-path",
+            "examples/prior-standup-rich.md",
+            "--chat-path",
+            "examples/chat-rich-sample.json",
+            "--output-path",
+            str(output_path),
+        ]
+    )
 
     assert config.source_mode == "sample"
     assert config.jira_path == Path("examples/jira-rich-sample.json")
     assert config.github_path == Path("examples/github-pr-rich-sample.json")
     assert config.prior_standup_path == Path("examples/prior-standup-rich.md")
+    assert config.chat_path == Path("examples/chat-rich-sample.json")
     assert config.output_path == output_path
 
 
@@ -432,6 +504,7 @@ def test_rich_sample_scenario_writes_json_output(tmp_path: Path) -> None:
     assert any("PR #1202" in item["source_refs"] for item in payload["risks"])
     assert any(item.get("related_work_items") for item in payload["risks"])
     assert payload["source_references"]
+
 
 def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     output_path = tmp_path / "cli-pre-read.md"
