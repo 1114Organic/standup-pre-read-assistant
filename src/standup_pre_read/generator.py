@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from typing import Any
 
 from .models import Activity
 
@@ -11,9 +12,73 @@ class GeneratedBullet:
     text: str
     sources: tuple[Activity, ...]
 
+    @property
+    def source_refs(self) -> tuple[str, ...]:
+        return tuple(source.source_id for source in self.sources if source.source_id)
+
+    @property
+    def related_work_items(self) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(item for source in self.sources for item in source.related_work_items if item)
+        )
+
+    @property
+    def confidence(self) -> str | None:
+        confidences = tuple(dict.fromkeys(source.confidence for source in self.sources if source.confidence))
+        if len(confidences) == 1:
+            return confidences[0]
+        if confidences:
+            return "mixed"
+        return None
+
     def render(self) -> str:
-        refs = ", ".join(source.source_id for source in self.sources)
+        refs = ", ".join(self.source_refs)
         return f"- {self.text} Source: {refs}." if refs else f"- {self.text} Source: supplied data."
+
+    def to_json_item(self) -> dict[str, Any]:
+        item: dict[str, Any] = {"text": self.text, "source_refs": list(self.source_refs)}
+        if self.confidence is not None:
+            item["confidence"] = self.confidence
+        if self.related_work_items:
+            item["related_work_items"] = list(self.related_work_items)
+        return item
+
+
+@dataclass(frozen=True)
+class PreReadDocument:
+    generated_at: str
+    team_name: str | None
+    source_mode: str
+    data_window: dict[str, str] | None
+    executive_summary: str
+    progress: tuple[GeneratedBullet, ...]
+    blockers: tuple[GeneratedBullet, ...]
+    decisions: tuple[GeneratedBullet, ...]
+    risks: tuple[GeneratedBullet, ...]
+    carryover: tuple[GeneratedBullet, ...]
+    suggested_agenda: tuple[GeneratedBullet, ...]
+    suggested_questions: tuple[GeneratedBullet, ...]
+    source_references: tuple[dict[str, str], ...]
+
+    def to_json_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "generated_at": self.generated_at,
+            "source_mode": self.source_mode,
+            "executive_summary": self.executive_summary,
+            "progress": [item.to_json_item() for item in self.progress],
+            "blockers": [item.to_json_item() for item in self.blockers],
+            "decisions": [item.to_json_item() for item in self.decisions],
+            "risks": [item.to_json_item() for item in self.risks],
+            "carryover": [item.to_json_item() for item in self.carryover],
+            "suggested_agenda": [item.to_json_item() for item in self.suggested_agenda],
+            "suggested_questions": [item.to_json_item() for item in self.suggested_questions],
+            "source_references": list(self.source_references),
+        }
+        if self.team_name:
+            payload["team_name"] = self.team_name
+        if self.data_window:
+            payload["data_window"] = self.data_window
+        return payload
 
 
 def _activities(activities: list[Activity], activity_type: str) -> list[Activity]:
@@ -82,7 +147,7 @@ def _pr_risk(pr: Activity, today: date, stale_pr_days: int) -> GeneratedBullet |
     return GeneratedBullet(f"{pr.source_id} is {', '.join(reasons)}{linked}.", (pr,))
 
 
-def _render_section(bullets: list[GeneratedBullet], empty: str) -> list[str]:
+def _render_section(bullets: tuple[GeneratedBullet, ...], empty: str) -> list[str]:
     return [bullet.render() for bullet in bullets] or [f"- {empty}"]
 
 
@@ -91,36 +156,32 @@ def _source_reference(sources: tuple[Activity, ...]) -> str:
     return refs or "supplied data"
 
 
-def _question(text: str, sources: tuple[Activity, ...]) -> str:
-    return f"- {text.rstrip('.?')}? Source: {_source_reference(sources)}."
+def _question(text: str, sources: tuple[Activity, ...]) -> GeneratedBullet:
+    return GeneratedBullet(f"{text.rstrip('.?')}?", sources)
 
 
 def _standup_questions(
-    blockers: list[GeneratedBullet],
-    decisions: list[GeneratedBullet],
-    risks: list[GeneratedBullet],
-    carryover: list[GeneratedBullet],
+    blockers: tuple[GeneratedBullet, ...],
+    decisions: tuple[GeneratedBullet, ...],
+    risks: tuple[GeneratedBullet, ...],
+    carryover: tuple[GeneratedBullet, ...],
     activities: list[Activity],
-) -> list[str]:
+) -> tuple[GeneratedBullet, ...]:
     questions: list[tuple[str, tuple[Activity, ...]]] = []
-
     for blocker in blockers:
         source = blocker.sources[0] if blocker.sources else None
         subject = source.source_id if source else "this blocker"
         detail = source.blocker_signal or source.description or source.title if source else blocker.text
         questions.append((f"What action is needed today to unblock {subject}: {detail}", blocker.sources))
-
     for risk in risks:
         source = risk.sources[0] if risk.sources else None
         subject = source.source_id if source else "this risky pull request"
         questions.append((f"What is the next step to reduce risk on {subject}: {risk.text}", risk.sources))
-
     for decision in decisions:
         source = decision.sources[0] if decision.sources else None
         subject = source.source_id if source else "this decision"
         detail = source.decision_signal if source and source.decision_signal else decision.text
         questions.append((f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources))
-
     for activity in activities:
         if activity.activity_type not in {"jira_issue", "github_pr"}:
             continue
@@ -136,7 +197,6 @@ def _standup_questions(
                     (activity,),
                 )
             )
-
     for item in carryover:
         source = item.sources[0] if item.sources else None
         subject = source.source_id if source and source.source_id != "prior-standup" else "prior standup carryover"
@@ -146,8 +206,7 @@ def _standup_questions(
                 item.sources,
             )
         )
-
-    deduped: list[str] = []
+    deduped: list[GeneratedBullet] = []
     seen: set[str] = set()
     for text, sources in questions:
         key = text.lower()
@@ -157,23 +216,26 @@ def _standup_questions(
         deduped.append(_question(text, sources))
         if len(deduped) == 9:
             break
+    return tuple(deduped)
 
-    return deduped or ["- No high-value standup questions found in the supplied sources."]
 
-
-def _references(activities: list[Activity]) -> list[str]:
-    seen: dict[str, str] = {}
+def _references(activities: list[Activity]) -> tuple[dict[str, str], ...]:
+    seen: dict[str, dict[str, str]] = {}
     for activity in activities:
         if activity.source_url:
-            seen[activity.source_id] = activity.source_url
-    return [f"- {source_id}: {seen[source_id]}" for source_id in sorted(seen)]
+            seen[activity.source_id] = {
+                "source_ref": activity.source_id,
+                "url": activity.source_url,
+                "source_system": activity.source_system,
+            }
+    return tuple(seen[source_id] for source_id in sorted(seen))
 
 
 def _summary(
-    progress: list[GeneratedBullet],
-    blockers: list[GeneratedBullet],
-    decisions: list[GeneratedBullet],
-    risks: list[GeneratedBullet],
+    progress: tuple[GeneratedBullet, ...],
+    blockers: tuple[GeneratedBullet, ...],
+    decisions: tuple[GeneratedBullet, ...],
+    risks: tuple[GeneratedBullet, ...],
 ) -> str:
     parts: list[str] = []
     if progress:
@@ -184,105 +246,154 @@ def _summary(
         parts.append(f"{len(decisions)} decision{'s' if len(decisions) != 1 else ''} need discussion")
     if risks:
         parts.append(f"{len(risks)} risk or aging-work item{'s' if len(risks) != 1 else ''} flagged")
-    return (
-        "No significant updates were found in the supplied sources."
-        if not parts
-        else "The generated pre-read found " + ", ".join(parts) + "."
-    )
+    if not parts:
+        return "No significant updates were found in the supplied sources."
+    return "The generated pre-read found " + ", ".join(parts) + "."
 
 
 def _agenda(
-    blockers: list[GeneratedBullet],
-    decisions: list[GeneratedBullet],
-    risks: list[GeneratedBullet],
+    blockers: tuple[GeneratedBullet, ...],
+    decisions: tuple[GeneratedBullet, ...],
+    risks: tuple[GeneratedBullet, ...],
     activities: list[Activity],
-) -> list[str]:
-    items: list[str] = []
-    items.extend(f"Confirm next step: {b.text}" for b in blockers)
-    items.extend(f"Make decision: {d.text}" for d in decisions)
-    items.extend(f"Review risk: {r.text}" for r in risks if "failing CI" in r.text or "open for" in r.text)
+) -> tuple[GeneratedBullet, ...]:
+    items: list[GeneratedBullet] = []
+    items.extend(GeneratedBullet(f"Confirm next step: {b.text}", b.sources) for b in blockers)
+    items.extend(GeneratedBullet(f"Make decision: {d.text}", d.sources) for d in decisions)
+    items.extend(
+        GeneratedBullet(f"Review risk: {r.text}", r.sources)
+        for r in risks
+        if "failing CI" in r.text or "open for" in r.text
+    )
     review_prs = [pr for pr in _open_prs(activities) if _needs_review(pr)]
-    items.extend(f"Confirm review path for {pr.source_id}: {pr.title}." for pr in review_prs)
-    deduped = list(dict.fromkeys(items))[:5]
-    return [f"{idx}. {item}" for idx, item in enumerate(deduped, start=1)] or [
-        "1. No urgent discussion topics found in the supplied sources."
-    ]
+    items.extend(GeneratedBullet(f"Confirm review path for {pr.source_id}: {pr.title}.", (pr,)) for pr in review_prs)
+    deduped: list[GeneratedBullet] = []
+    seen: set[str] = set()
+    for item in items:
+        if item.text in seen:
+            continue
+        seen.add(item.text)
+        deduped.append(item)
+        if len(deduped) == 5:
+            break
+    return tuple(deduped)
 
 
-def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days: int, today: date | None = None) -> str:
+def _data_window(activities: list[Activity]) -> dict[str, str] | None:
+    timestamps = [ts for activity in activities for ts in (activity.timestamp, activity.updated_timestamp) if ts]
+    if not timestamps:
+        return None
+    return {"start": min(timestamps).date().isoformat(), "end": max(timestamps).date().isoformat()}
+
+
+def generate_pre_read_document(
+    activities: list[Activity],
+    team_name: str | None,
+    stale_pr_days: int,
+    today: date | None = None,
+    source_mode: str = "sample",
+) -> PreReadDocument:
     today = today or date.today()
     issues = sorted(_activities(activities, "jira_issue"), key=lambda activity: activity.source_id)
-
-    progress: list[GeneratedBullet] = []
-    for issue in issues:
-        if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}:
-            text, sources = _issue_summary(issue, activities)
-            progress.append(GeneratedBullet(text.strip().rstrip(".") + ".", sources))
-
-    blockers = [
+    progress = tuple(
+        GeneratedBullet(text.strip().rstrip(".") + ".", sources)
+        for issue in issues
+        if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}
+        for text, sources in [_issue_summary(issue, activities)]
+    )
+    blockers = tuple(
         GeneratedBullet(
-            f"{issue.source_id} is blocked {issue.blocker_signal or issue.description or issue.title}", (issue,)
+            f"{issue.source_id} is blocked {issue.blocker_signal or issue.description or issue.title}",
+            (issue,),
         )
         for issue in issues
         if issue.blocker_signal or issue.status.lower() == "blocked"
-    ]
-    decisions = [
+    )
+    decisions = tuple(
         GeneratedBullet(f"{issue.decision_signal} ({issue.source_id}).", (issue,))
         for issue in issues
         if issue.decision_signal
-    ]
-    risks = [
+    )
+    risks = tuple(
         risk
         for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id)
         if (risk := _pr_risk(pr, today, stale_pr_days))
-    ]
-
-    carryover = [
+    )
+    carryover = tuple(
         GeneratedBullet(activity.title, (activity,))
         for activity in activities
         if activity.activity_type in {"prior_blocker", "prior_decision", "prior_carryover"}
-    ]
+    )
+    summary = _summary(progress, blockers, decisions, risks)
+    return PreReadDocument(
+        generated_at=datetime.combine(today, datetime.min.time(), tzinfo=UTC).isoformat(),
+        team_name=team_name,
+        source_mode=source_mode,
+        data_window=_data_window(activities),
+        executive_summary=summary,
+        progress=progress,
+        blockers=blockers,
+        decisions=decisions,
+        risks=risks,
+        carryover=carryover,
+        suggested_agenda=_agenda(blockers, decisions, risks, activities),
+        suggested_questions=_standup_questions(blockers, decisions, risks, carryover, activities),
+        source_references=_references(activities),
+    )
 
+
+def render_pre_read_markdown(document: PreReadDocument) -> str:
+    generated_date = document.generated_at[:10]
+    agenda_lines = [f"{idx}. {item.text}" for idx, item in enumerate(document.suggested_agenda, start=1)] or [
+        "1. No urgent discussion topics found in the supplied sources."
+    ]
+    question_lines = [item.render() for item in document.suggested_questions] or [
+        "- No high-value standup questions found in the supplied sources."
+    ]
     lines = [
-        f"# Standup Pre-Read: {team_name}",
+        f"# Standup Pre-Read: {document.team_name or 'Team'}",
         "",
-        f"Generated: {today.isoformat()}",
+        f"Generated: {generated_date}",
         "",
         "## Executive Summary",
         "",
-        _summary(progress, blockers, decisions, risks),
+        document.executive_summary,
         "",
         "## Progress Since Last Standup",
         "",
-        *_render_section(progress, "No confirmed progress found in the supplied sources."),
+        *_render_section(document.progress, "No confirmed progress found in the supplied sources."),
         "",
         "## Blockers Needing Action",
         "",
-        *_render_section(blockers, "No active blockers found in the supplied sources."),
+        *_render_section(document.blockers, "No active blockers found in the supplied sources."),
         "",
         "## Decisions Needed",
         "",
-        *_render_section(decisions, "No open decisions found in the supplied sources."),
+        *_render_section(document.decisions, "No open decisions found in the supplied sources."),
         "",
         "## Risks and Aging Work",
         "",
-        *_render_section(risks, "No stale or risky pull requests found in the supplied sources."),
+        *_render_section(document.risks, "No stale or risky pull requests found in the supplied sources."),
         "",
         "## Carryover From Yesterday",
         "",
-        *_render_section(carryover, "No unresolved carryover found in the supplied prior standup."),
+        *_render_section(document.carryover, "No unresolved carryover found in the supplied prior standup."),
         "",
         "## Suggested Standup Agenda",
         "",
-        *_agenda(blockers, decisions, risks, activities),
+        *agenda_lines,
         "",
         "## Suggested Standup Questions",
         "",
-        *_standup_questions(blockers, decisions, risks, carryover, activities),
+        *question_lines,
         "",
         "## Source References",
         "",
-        *_references(activities),
+        *[f"- {reference['source_ref']}: {reference['url']}" for reference in document.source_references],
         "",
     ]
     return "\n".join(lines)
+
+
+def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days: int, today: date | None = None) -> str:
+    return render_pre_read_markdown(generate_pre_read_document(activities, team_name, stale_pr_days, today))

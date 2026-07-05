@@ -12,4 +12,5 @@ class Config:
     github_path: Path = Path("examples/github-pr-sample.json")
     prior_standup_path: Path = Path("examples/prior-standup.md")
     output_path: Path = Path("output/standup-pre-read.md")
+    json_output_path: Path | None = None
     stale_pr_days: int = 5

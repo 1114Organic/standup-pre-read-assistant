@@ -9,7 +9,8 @@ The current MVP generates a local markdown standup pre-read from sample input fi
 - Loads sample issue data, sample pull request data, and prior standup notes from the repository.
 - Normalizes those inputs into a common activity model.
 - Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, concise source-backed standup questions, and source references.
-- Writes the generated draft to a local output path, defaulting to `output/standup-pre-read.md`.
+- Optionally writes a structured JSON version of the same pre-read content for downstream tools.
+- Writes the generated markdown draft to a local output path, defaulting to `output/standup-pre-read.md`.
 - Fails fast with a clear CLI error when an unsupported source mode is requested.
 
 The MVP is designed as a thin slice that proves the pre-read generation flow before adding live integrations.
@@ -41,6 +42,17 @@ To choose an explicit output path:
 ```bash
 PYTHONPATH=src python -m standup_pre_read.cli --source-mode sample --output-path output/custom-pre-read.md
 ```
+
+To also write structured JSON output:
+
+```bash
+PYTHONPATH=src python -m standup_pre_read.cli \
+  --source-mode sample \
+  --output-path output/custom-pre-read.md \
+  --json-output-path output/custom-pre-read.json
+```
+
+The JSON file includes generation metadata, source mode, data window when available, the executive summary, progress, blockers, decisions, risks, carryover, suggested agenda, suggested questions, and source references. List items include source references, confidence when available, and related work items when available.
 
 You can also use the Makefile demo target:
 
@@ -90,7 +102,7 @@ make check
 - Linting with `ruff`.
 - Static type checking with `mypy`.
 
-The test suite verifies the generated output structure, key data-driven content, source-backed standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, and clean failure for unsupported source modes.
+The test suite verifies the generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, and clean failure for unsupported source modes.
 
 ## 6. Suggested Next Milestones
 
@@ -104,7 +116,7 @@ Standup question mode is now part of the markdown MVP output. A future enhanceme
 
 ### Structured Output JSON
 
-Add an optional structured JSON output alongside markdown so downstream tools can consume summaries, blockers, decisions, risks, carryover items, and source references programmatically.
+Structured JSON output is now available via `--json-output-path`. Future enhancements can add schema versioning or publish the JSON to downstream systems after the local sample-mode shape is validated.
 
 ### Future Jira MCP Connector
 
