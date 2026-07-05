@@ -18,9 +18,7 @@ class GeneratedBullet:
 
     @property
     def related_work_items(self) -> tuple[str, ...]:
-        return tuple(
-            dict.fromkeys(item for source in self.sources for item in source.related_work_items if item)
-        )
+        return tuple(dict.fromkeys(item for source in self.sources for item in source.related_work_items if item))
 
     @property
     def confidence(self) -> str | None:
@@ -183,6 +181,14 @@ def _standup_questions(
         detail = source.decision_signal if source and source.decision_signal else decision.text
         questions.append((f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources))
     for activity in activities:
+        if activity.activity_type == "chat_signal":
+            questions.append(
+                (
+                    f"Who can clarify ownership or next steps from chat: {activity.description}",
+                    (activity,),
+                )
+            )
+            continue
         if activity.activity_type not in {"jira_issue", "github_pr"}:
             continue
         missing: list[str] = []
@@ -301,7 +307,7 @@ def generate_pre_read_document(
         if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}
         for text, sources in [_issue_summary(issue, activities)]
     )
-    blockers = tuple(
+    issue_blockers = tuple(
         GeneratedBullet(
             f"{issue.source_id} is blocked {issue.blocker_signal or issue.description or issue.title}",
             (issue,),
@@ -309,11 +315,23 @@ def generate_pre_read_document(
         for issue in issues
         if issue.blocker_signal or issue.status.lower() == "blocked"
     )
-    decisions = tuple(
+    chat_blockers = tuple(
+        GeneratedBullet(f"Chat blocker: {activity.description}", (activity,))
+        for activity in activities
+        if activity.activity_type == "chat_blocker"
+    )
+    blockers = (*issue_blockers, *chat_blockers)
+    issue_decisions = tuple(
         GeneratedBullet(f"{issue.decision_signal} ({issue.source_id}).", (issue,))
         for issue in issues
         if issue.decision_signal
     )
+    chat_decisions = tuple(
+        GeneratedBullet(f"Chat decision requested: {activity.description}", (activity,))
+        for activity in activities
+        if activity.activity_type == "chat_decision"
+    )
+    decisions = (*issue_decisions, *chat_decisions)
     risks = tuple(
         risk
         for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id)
@@ -322,7 +340,14 @@ def generate_pre_read_document(
     carryover = tuple(
         GeneratedBullet(activity.title, (activity,))
         for activity in activities
-        if activity.activity_type in {"prior_blocker", "prior_decision", "prior_carryover"}
+        if activity.activity_type
+        in {
+            "prior_blocker",
+            "prior_decision",
+            "prior_carryover",
+            "chat_follow_up",
+            "chat_signal",
+        }
     )
     summary = _summary(progress, blockers, decisions, risks)
     return PreReadDocument(

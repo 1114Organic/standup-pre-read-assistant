@@ -1,6 +1,6 @@
 # Standup Pre-Read Assistant
 
-AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
+AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, optional sample chat messages, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
 
 For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
@@ -9,9 +9,10 @@ The first build target is a thin-slice MVP:
 1. Read sample Jira JSON.
 2. Read sample GitHub pull request JSON.
 3. Read prior standup notes.
-4. Generate a markdown standup pre-read, including concise suggested standup questions.
-5. Save the draft locally.
-6. Add tests that verify the output structure.
+4. Optionally read local sample Slack/Teams-style chat messages.
+5. Generate a markdown standup pre-read, including concise suggested standup questions.
+6. Save the draft locally.
+7. Add tests that verify the output structure.
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data.
 
@@ -41,7 +42,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli --source-mode sample --output-pat
 standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 ```
 
-The default configuration reads the sample files in `examples/`. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
+The default configuration reads the issue, pull request, and prior-standup sample files in `examples/`. Add `--chat-path examples/chat-rich-sample.json` to include local sample Slack/Teams-style messages; chat messages are normalized into the same activity model and can contribute blockers, decisions, carryover/follow-ups, standup questions, and source references. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and live messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
 To write a machine-readable JSON version alongside the markdown, pass `--json-output-path`:
 
@@ -62,11 +63,12 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --jira-path examples/jira-rich-sample.json \
   --github-path examples/github-pr-rich-sample.json \
   --prior-standup-path examples/prior-standup-rich.md \
+  --chat-path examples/chat-rich-sample.json \
   --output-path output/rich-standup-pre-read.md \
   --json-output-path output/rich-standup-pre-read.json
 ```
 
-The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.
+The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, local chat blockers/decisions/follow-ups, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.
 
 ## Makefile Commands
 
@@ -113,6 +115,7 @@ python3 -m mypy
 │   ├── jira-rich-sample.json
 │   ├── github-pr-rich-sample.json
 │   ├── prior-standup-rich.md
+│   ├── chat-rich-sample.json
 │   └── expected-pre-read.md
 ├── src
 └── tests

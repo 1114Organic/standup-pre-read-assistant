@@ -74,6 +74,57 @@ def normalize_github(data: dict[str, Any]) -> list[Activity]:
     return activities
 
 
+def _chat_activity_type(text: str) -> ActivityType | None:
+    lowered = text.lower()
+    if any(term in lowered for term in ("blocked", "blocker", "stuck", "cannot continue", "can't continue")):
+        return "chat_blocker"
+    if any(term in lowered for term in ("decision needed", "decide", "should we", "need a decision")):
+        return "chat_decision"
+    if any(term in lowered for term in ("follow up", "follow-up", "action item", "todo", "next step")):
+        return "chat_follow_up"
+    if any(term in lowered for term in ("who owns", "unclear who", "owner?", "ownership")):
+        return "chat_signal"
+    return None
+
+
+def normalize_chat(data: dict[str, Any]) -> list[Activity]:
+    activities: list[Activity] = []
+    workspace = data.get("workspace")
+    for channel in data.get("channels", []):
+        channel_name = channel.get("name")
+        for message in channel.get("messages", []):
+            text = message.get("text", "").strip()
+            activity_type = _chat_activity_type(text)
+            if not text or activity_type is None:
+                continue
+            related = tuple(message.get("related_work_items", []))
+            source_id = message.get("id", "chat-message")
+            is_blocker = activity_type == "chat_blocker"
+            is_decision = activity_type == "chat_decision"
+            activities.append(
+                Activity(
+                    source_system="chat",
+                    source_id=source_id,
+                    source_url=message.get("url"),
+                    title=text,
+                    description=text,
+                    owner=message.get("author"),
+                    team=workspace,
+                    project=channel_name,
+                    activity_type=activity_type,
+                    status="open",
+                    timestamp=parse_datetime(message.get("timestamp")),
+                    related_work_items=related,
+                    blocker_signal=text if is_blocker else None,
+                    decision_signal=text if is_decision else None,
+                    risk_signal=text if activity_type == "chat_signal" else None,
+                    confidence="medium",
+                    updated_timestamp=parse_datetime(message.get("timestamp")),
+                )
+            )
+    return activities
+
+
 def normalize_prior(markdown: str) -> list[Activity]:
     activities: list[Activity] = []
     for item in extract_prior_items(markdown):
@@ -100,5 +151,15 @@ def normalize_prior(markdown: str) -> list[Activity]:
     return activities
 
 
-def normalize_all(jira_data: dict[str, Any], github_data: dict[str, Any], prior_markdown: str) -> list[Activity]:
-    return [*normalize_jira(jira_data), *normalize_github(github_data), *normalize_prior(prior_markdown)]
+def normalize_all(
+    jira_data: dict[str, Any],
+    github_data: dict[str, Any],
+    prior_markdown: str,
+    chat_data: dict[str, Any] | None = None,
+) -> list[Activity]:
+    return [
+        *normalize_jira(jira_data),
+        *normalize_github(github_data),
+        *normalize_prior(prior_markdown),
+        *normalize_chat(chat_data or {"channels": []}),
+    ]

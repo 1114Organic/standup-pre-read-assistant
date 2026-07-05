@@ -18,6 +18,12 @@ def load_prior_standup(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def load_chat_sample(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        return {"channels": []}
+    return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+
+
 def extract_prior_items(markdown: str) -> list[dict[str, str]]:
     """Extract unresolved/open prior blocker, decision, and carryover bullets."""
     items: list[dict[str, str]] = []

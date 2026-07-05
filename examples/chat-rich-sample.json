@@ -1,0 +1,50 @@
+{
+  "workspace": "example-collaboration-space",
+  "channels": [
+    {
+      "name": "sample-team-standup",
+      "messages": [
+        {
+          "id": "chat-001",
+          "timestamp": "2026-06-16T08:45:00+00:00",
+          "author": "teammate-a",
+          "text": "Blocked on SAMPLE-212 because the service credential approval is still pending. Can someone help move this today?",
+          "url": "https://chat.example.local/archives/sample-team-standup/p001",
+          "related_work_items": ["SAMPLE-212"]
+        },
+        {
+          "id": "chat-002",
+          "timestamp": "2026-06-16T09:05:00+00:00",
+          "author": "teammate-b",
+          "text": "Decision needed for SAMPLE-213: should notifications launch to pilot users first or all workspaces?",
+          "url": "https://chat.example.local/archives/sample-team-standup/p002",
+          "related_work_items": ["SAMPLE-213"]
+        },
+        {
+          "id": "chat-003",
+          "timestamp": "2026-06-16T09:20:00+00:00",
+          "author": "teammate-c",
+          "text": "Follow up with the release checklist owner for SAMPLE-214 before tomorrow's standup.",
+          "url": "https://chat.example.local/archives/sample-team-standup/p003",
+          "related_work_items": ["SAMPLE-214"]
+        },
+        {
+          "id": "chat-004",
+          "timestamp": "2026-06-16T09:35:00+00:00",
+          "author": "teammate-d",
+          "text": "Who owns SAMPLE-214 now? I am unclear who is driving the remaining launch checklist.",
+          "url": "https://chat.example.local/archives/sample-team-standup/p004",
+          "related_work_items": ["SAMPLE-214"]
+        },
+        {
+          "id": "chat-005",
+          "timestamp": "2026-06-16T09:50:00+00:00",
+          "author": "teammate-e",
+          "text": "Good morning team, thanks for the quick sync yesterday!",
+          "url": "https://chat.example.local/archives/sample-team-standup/p005",
+          "related_work_items": []
+        }
+      ]
+    }
+  ]
+}
