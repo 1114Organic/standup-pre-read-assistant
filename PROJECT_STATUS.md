@@ -52,7 +52,7 @@ PYTHONPATH=src python -m standup_pre_read.cli \
   --json-output-path output/custom-pre-read.json
 ```
 
-The JSON file includes generation metadata, source mode, data window when available, the executive summary, progress, blockers, decisions, risks, carryover, suggested agenda, suggested questions, and source references. List items include source references, confidence when available, and related work items when available.
+The JSON file is generated from the same structured pre-read document as the markdown draft. It includes `generated_at`, `source_mode`, `team_name` when configured, data window when available, the executive summary, progress, blockers, decisions, risks, carryover, suggested agenda, suggested questions, and source references. List items include `text` and `source_refs`, plus confidence and related work items when available.
 
 You can also use the Makefile demo target:
 
