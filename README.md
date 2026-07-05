@@ -52,7 +52,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --json-output-path output/standup-pre-read.json
 ```
 
-The JSON output is generated from the same structured pre-read document as markdown. It includes metadata (`generated_at`, `team_name`, `source_mode`, and a `data_window` when source timestamps are available), top-level pre-read sections, source-backed list items, and source references for downstream tools.
+The JSON output is generated from the same structured pre-read document as markdown, so enabling it does not change the markdown draft. It includes metadata (`generated_at`, `team_name` when configured, `source_mode`, and a `data_window` when source timestamps are available), `executive_summary`, `progress`, `blockers`, `decisions`, `risks`, `carryover`, `suggested_agenda`, `suggested_questions`, and `source_references`. Each structured list item includes `text` and `source_refs`, plus `confidence` and `related_work_items` when those values are available.
 
 To run the richer demo-data scenario, point the same sample-mode CLI at the alternate example files:
 
