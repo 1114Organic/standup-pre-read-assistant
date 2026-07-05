@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -8,7 +9,7 @@ import pytest
 from standup_pre_read.cli import build_pre_read, main, parse_args
 from standup_pre_read.collectors import load_github_pr_sample, load_jira_sample, load_prior_standup
 from standup_pre_read.config import Config
-from standup_pre_read.generator import generate_pre_read
+from standup_pre_read.generator import generate_pre_read, generate_pre_read_document
 from standup_pre_read.models import Activity
 from standup_pre_read.normalizer import normalize_all, normalize_github, normalize_jira, normalize_prior, parse_datetime
 
@@ -348,6 +349,89 @@ def test_rich_sample_scenario_generates_expected_demo_signals(tmp_path: Path) ->
     assert "Should we keep carrying over SAMPLE-214" in markdown
     assert "DEMO-" not in markdown
     assert "example-platform-service" not in markdown
+
+
+def test_parse_args_accepts_json_output_path(tmp_path: Path) -> None:
+    json_output_path = tmp_path / "pre-read.json"
+
+    config = parse_args(["--json-output-path", str(json_output_path)])
+
+    assert config.json_output_path == json_output_path
+
+
+def test_build_pre_read_writes_json_output_with_expected_sections_and_sources(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "standup-pre-read.md"
+    json_output_path = tmp_path / "standup-pre-read.json"
+
+    markdown = build_pre_read(Config(output_path=markdown_output_path, json_output_path=json_output_path))
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert markdown_output_path.read_text(encoding="utf-8") == markdown
+    assert "## Progress Since Last Standup" in markdown
+    assert set(payload) >= {
+        "generated_at",
+        "team_name",
+        "source_mode",
+        "data_window",
+        "executive_summary",
+        "progress",
+        "blockers",
+        "decisions",
+        "risks",
+        "carryover",
+        "suggested_agenda",
+        "suggested_questions",
+        "source_references",
+    }
+    assert payload["source_mode"] == "sample"
+    assert payload["progress"]
+    assert all("text" in item and "source_refs" in item for item in payload["progress"])
+    assert any(item["source_refs"] for item in payload["blockers"] + payload["risks"] + payload["suggested_questions"])
+
+
+def test_generated_json_uses_same_structured_data_as_markdown() -> None:
+    activities = normalize_all(
+        load_jira_sample(Config.jira_path),
+        load_github_pr_sample(Config.github_path),
+        load_prior_standup(Config.prior_standup_path),
+    )
+
+    document = generate_pre_read_document(
+        activities,
+        "Example Platform Team",
+        stale_pr_days=5,
+        today=date(2026, 6, 16),
+        source_mode="sample",
+    )
+    markdown = generate_pre_read(activities, "Example Platform Team", stale_pr_days=5, today=date(2026, 6, 16))
+    payload = document.to_json_dict()
+
+    assert payload["progress"][0]["text"] in markdown
+    assert payload["blockers"][0]["source_refs"] == ["DEMO-103"]
+    assert payload["blockers"][0]["confidence"] == "high"
+    assert "DEMO-103" in payload["blockers"][0]["related_work_items"]
+
+
+def test_rich_sample_scenario_writes_json_output(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "rich-pre-read.md"
+    json_output_path = tmp_path / "rich-pre-read.json"
+
+    build_pre_read(
+        Config(
+            jira_path=Path("examples/jira-rich-sample.json"),
+            github_path=Path("examples/github-pr-rich-sample.json"),
+            prior_standup_path=Path("examples/prior-standup-rich.md"),
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert payload["progress"]
+    assert any("SAMPLE-212" in item["source_refs"] for item in payload["blockers"])
+    assert any("PR #1202" in item["source_refs"] for item in payload["risks"])
+    assert any(item.get("related_work_items") for item in payload["risks"])
+    assert payload["source_references"]
 
 def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     output_path = tmp_path / "cli-pre-read.md"

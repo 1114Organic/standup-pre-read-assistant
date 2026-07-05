@@ -43,6 +43,17 @@ standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 
 The default configuration reads the sample files in `examples/`. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
 
+To write a machine-readable JSON version alongside the markdown, pass `--json-output-path`:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --source-mode sample \
+  --output-path output/standup-pre-read.md \
+  --json-output-path output/standup-pre-read.json
+```
+
+The JSON output is generated from the same structured pre-read document as markdown. It includes metadata (`generated_at`, `team_name`, `source_mode`, and a `data_window` when source timestamps are available), top-level pre-read sections, source-backed list items, and source references for downstream tools.
+
 To run the richer demo-data scenario, point the same sample-mode CLI at the alternate example files:
 
 ```bash
@@ -51,7 +62,8 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --jira-path examples/jira-rich-sample.json \
   --github-path examples/github-pr-rich-sample.json \
   --prior-standup-path examples/prior-standup-rich.md \
-  --output-path output/rich-standup-pre-read.md
+  --output-path output/rich-standup-pre-read.md \
+  --json-output-path output/rich-standup-pre-read.json
 ```
 
 The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.

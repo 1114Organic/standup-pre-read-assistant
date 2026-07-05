@@ -1,6 +1,6 @@
 # Standup Pre-Read: Example Platform Team
 
-Generated: 2026-06-28
+Generated: 2026-06-29
 
 ## Executive Summary
 
@@ -23,8 +23,8 @@ The generated pre-read found 4 progress items found, 1 blocker need action, 1 de
 
 ## Risks and Aging Work
 
-- PR #501 is open for 15 days since June 13, requested review changes, no updates for 13 days linked to DEMO-102. Source: PR #501.
-- PR #502 is open for 18 days since June 10, has failing CI, no updates for 13 days linked to DEMO-104. Source: PR #502.
+- PR #501 is open for 16 days since June 13, requested review changes, no updates for 14 days linked to DEMO-102. Source: PR #501.
+- PR #502 is open for 19 days since June 10, has failing CI, no updates for 14 days linked to DEMO-104. Source: PR #502.
 
 ## Carryover From Yesterday
 
@@ -36,15 +36,15 @@ The generated pre-read found 4 progress items found, 1 blocker need action, 1 de
 
 1. Confirm next step: DEMO-103 is blocked Waiting on IAM approval.
 2. Make decision: Decide whether search relevance tuning is global or workspace-only. (DEMO-104).
-3. Review risk: PR #501 is open for 15 days since June 13, requested review changes, no updates for 13 days linked to DEMO-102.
-4. Review risk: PR #502 is open for 18 days since June 10, has failing CI, no updates for 13 days linked to DEMO-104.
+3. Review risk: PR #501 is open for 16 days since June 13, requested review changes, no updates for 14 days linked to DEMO-102.
+4. Review risk: PR #502 is open for 19 days since June 10, has failing CI, no updates for 14 days linked to DEMO-104.
 5. Confirm review path for PR #501: Add usage event publisher.
 
 ## Suggested Standup Questions
 
 - What action is needed today to unblock DEMO-103: Waiting on IAM approval? Source: DEMO-103.
-- What is the next step to reduce risk on PR #501: PR #501 is open for 15 days since June 13, requested review changes, no updates for 13 days linked to DEMO-102? Source: PR #501.
-- What is the next step to reduce risk on PR #502: PR #502 is open for 18 days since June 10, has failing CI, no updates for 13 days linked to DEMO-104? Source: PR #502.
+- What is the next step to reduce risk on PR #501: PR #501 is open for 16 days since June 13, requested review changes, no updates for 14 days linked to DEMO-102? Source: PR #501.
+- What is the next step to reduce risk on PR #502: PR #502 is open for 19 days since June 10, has failing CI, no updates for 14 days linked to DEMO-104? Source: PR #502.
 - Who can make or facilitate the decision for DEMO-104: Decide whether search relevance tuning is global or workspace-only? Source: DEMO-104.
 - Should we keep carrying over DEMO-103, and what changed since the last standup: DEMO-103: Service account permissions need IAM approval before the data exporter can be tested? Source: DEMO-103.
 - Should we keep carrying over DEMO-104, and what changed since the last standup: DEMO-104: Decide whether platform search relevance tuning should apply globally or only to workspace search? Source: DEMO-104.
