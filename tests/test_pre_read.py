@@ -482,6 +482,133 @@ def test_generated_json_uses_same_structured_data_as_markdown() -> None:
     assert payload["blockers"][0]["source_refs"] == ["DEMO-103"]
     assert payload["blockers"][0]["confidence"] == "high"
     assert "DEMO-103" in payload["blockers"][0]["related_work_items"]
+    assert payload["blockers"][0]["priority"] > min(item["priority"] for item in payload["progress"])
+
+
+def test_priority_orders_high_signal_items_before_routine_items() -> None:
+    activities = [
+        Activity(
+            source_system="issue_tracker",
+            source_id="ALT-301",
+            source_url=None,
+            title="Routine progress",
+            description="Implementation is proceeding.",
+            owner="dev-one",
+            team=None,
+            project=None,
+            activity_type="jira_issue",
+            status="In Progress",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+        ),
+        Activity(
+            source_system="issue_tracker",
+            source_id="ALT-302",
+            source_url=None,
+            title="Unowned dependency",
+            description="Cannot proceed until partner API is enabled.",
+            owner=None,
+            team=None,
+            project=None,
+            activity_type="jira_issue",
+            status="Blocked",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            blocker_signal="Partner API access is unavailable.",
+        ),
+        Activity(
+            source_system="issue_tracker",
+            source_id="ALT-303",
+            source_url=None,
+            title="Choose rollout path",
+            description="Routine implementation continues after choice.",
+            owner="facilitator",
+            team=None,
+            project=None,
+            activity_type="jira_issue",
+            status="In Progress",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            decision_signal="Choose pilot or full rollout.",
+        ),
+        Activity(
+            source_system="source_host",
+            source_id="PR #303",
+            source_url=None,
+            title="Routine refactor",
+            description="Ready for review.",
+            owner="dev-two",
+            team=None,
+            project=None,
+            activity_type="github_pr",
+            status="open",
+            timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            related_work_items=("ALT-301",),
+            updated_timestamp=parse_datetime("2026-06-15T12:00:00+00:00"),
+            ci_state="passing",
+            review_state="review_required",
+        ),
+        Activity(
+            source_system="source_host",
+            source_id="PR #304",
+            source_url=None,
+            title="Risky migration",
+            description="Migration tests are failing.",
+            owner="dev-three",
+            team=None,
+            project=None,
+            activity_type="github_pr",
+            status="open",
+            timestamp=parse_datetime("2026-06-01T12:00:00+00:00"),
+            related_work_items=("ALT-302",),
+            updated_timestamp=parse_datetime("2026-06-02T12:00:00+00:00"),
+            ci_state="failing",
+            review_state="changes_requested",
+        ),
+        Activity(
+            source_system="prior_standup",
+            source_id="ALT-301",
+            source_url=None,
+            title="Routine status update from yesterday.",
+            description="Routine status update from yesterday.",
+            owner="dev-one",
+            team=None,
+            project=None,
+            activity_type="prior_carryover",
+            status="unresolved",
+            timestamp=None,
+        ),
+        Activity(
+            source_system="prior_standup",
+            source_id="ALT-302",
+            source_url=None,
+            title="Unresolved partner API blocker from yesterday.",
+            description="Unresolved partner API blocker from yesterday.",
+            owner=None,
+            team=None,
+            project=None,
+            activity_type="prior_blocker",
+            status="unresolved",
+            timestamp=None,
+        ),
+    ]
+
+    document = generate_pre_read_document(
+        activities,
+        "Example Team",
+        stale_pr_days=5,
+        today=date(2026, 6, 16),
+    )
+    payload = document.to_json_dict()
+
+    assert document.blockers[0].source_refs == ("ALT-302",)
+    assert document.decisions[0].source_refs == ("ALT-303",)
+    assert document.risks[0].source_refs == ("PR #304",)
+    assert document.carryover[0].text == "Unresolved partner API blocker from yesterday."
+    assert document.progress[0].source_refs[0] == "ALT-301"
+    assert document.suggested_questions[0].priority is not None
+    assert document.suggested_questions[-1].priority is not None
+    assert document.suggested_questions[0].priority >= document.suggested_questions[-1].priority
+    assert document.suggested_questions[0].priority == document.risks[0].priority
+    assert payload["risks"][0]["priority"] > payload["progress"][0]["priority"]
+    assert payload["carryover"][0]["priority"] > payload["carryover"][1]["priority"]
 
 
 def test_rich_sample_scenario_writes_json_output(tmp_path: Path) -> None:

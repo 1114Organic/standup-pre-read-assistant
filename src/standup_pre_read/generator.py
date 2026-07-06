@@ -11,6 +11,7 @@ from .models import Activity
 class GeneratedBullet:
     text: str
     sources: tuple[Activity, ...]
+    priority: int | None = None
 
     @property
     def source_refs(self) -> tuple[str, ...]:
@@ -39,6 +40,8 @@ class GeneratedBullet:
             item["confidence"] = self.confidence
         if self.related_work_items:
             item["related_work_items"] = list(self.related_work_items)
+        if self.priority is not None:
+            item["priority"] = self.priority
         return item
 
 
@@ -81,6 +84,112 @@ class PreReadDocument:
 
 def _activities(activities: list[Activity], activity_type: str) -> list[Activity]:
     return [activity for activity in activities if activity.activity_type == activity_type]
+
+
+def _activity_priority(activity: Activity, today: date | None = None, stale_pr_days: int = 5) -> int:
+    score = 10
+    status = activity.status.lower()
+    signal_text = " ".join(
+        part
+        for part in (
+            activity.title,
+            activity.description,
+            activity.blocker_signal or "",
+            activity.decision_signal or "",
+            activity.risk_signal or "",
+            activity.ci_state or "",
+            activity.review_state or "",
+        )
+        if part
+    ).lower()
+
+    if (
+        activity.blocker_signal
+        or activity.activity_type in {"chat_blocker", "prior_blocker"}
+        or "block" in status
+        or "block" in signal_text
+    ):
+        score += 90
+    if (
+        activity.decision_signal
+        or activity.activity_type in {"chat_decision", "prior_decision"}
+        or "decision" in signal_text
+    ):
+        score += 75
+    if activity.activity_type in {
+        "prior_blocker",
+        "prior_decision",
+        "prior_carryover",
+        "chat_follow_up",
+        "chat_signal",
+    }:
+        score += 45
+    if activity.ci_state == "failing" or "failing ci" in signal_text:
+        score += 80
+    if activity.review_state == "changes_requested":
+        score += 50
+    elif activity.review_state == "review_required":
+        score += 25
+    if activity.risk_signal:
+        score += 45
+    if activity.activity_type == "github_pr" and status == "open":
+        if today and activity.timestamp:
+            age_days = (today - activity.timestamp.date()).days
+            if age_days >= stale_pr_days:
+                score += 60 + min(age_days, 30)
+        if today and activity.updated_timestamp:
+            idle_days = (today - activity.updated_timestamp.date()).days
+            if idle_days >= stale_pr_days:
+                score += 35 + min(idle_days, 30)
+        if not activity.related_work_items:
+            score += 15
+    if not activity.owner or not activity.status or status == "unknown":
+        score += 35
+    if _is_done(activity.status):
+        score -= 20
+    if status in {"in progress", "review"} and not any(
+        (activity.blocker_signal, activity.decision_signal, activity.risk_signal)
+    ):
+        score -= 5
+    return max(score, 0)
+
+
+def _bullet_priority(bullet: GeneratedBullet, today: date | None = None, stale_pr_days: int = 5) -> int:
+    if bullet.priority is not None:
+        return bullet.priority
+    if not bullet.sources:
+        return 0
+    score = max(_activity_priority(source, today, stale_pr_days) for source in bullet.sources)
+    text = bullet.text.lower()
+    if "failing ci" in text:
+        score += 20
+    if "open for" in text or "no updates" in text:
+        score += 15
+    return score
+
+
+def _with_priorities(
+    bullets: tuple[GeneratedBullet, ...], today: date | None = None, stale_pr_days: int = 5
+) -> tuple[GeneratedBullet, ...]:
+    return tuple(
+        bullet
+        if bullet.priority is not None
+        else GeneratedBullet(bullet.text, bullet.sources, _bullet_priority(bullet, today, stale_pr_days))
+        for bullet in bullets
+    )
+
+
+def _prioritize(
+    bullets: tuple[GeneratedBullet, ...], today: date | None = None, stale_pr_days: int = 5
+) -> tuple[GeneratedBullet, ...]:
+    prioritized = _with_priorities(bullets, today, stale_pr_days)
+    return tuple(
+        bullet
+        for _, bullet in sorted(
+            enumerate(prioritized),
+            key=lambda item: (-(item[1].priority or 0), item[0]),
+        )
+    )
 
 
 def _open_prs(activities: list[Activity]) -> list[Activity]:
@@ -154,8 +263,20 @@ def _source_reference(sources: tuple[Activity, ...]) -> str:
     return refs or "supplied data"
 
 
-def _question(text: str, sources: tuple[Activity, ...]) -> GeneratedBullet:
-    return GeneratedBullet(f"{text.rstrip('.?')}?", sources)
+def _question(
+    text: str,
+    sources: tuple[Activity, ...],
+    priority: int | None = None,
+    today: date | None = None,
+    stale_pr_days: int = 5,
+) -> GeneratedBullet:
+    return GeneratedBullet(
+        f"{text.rstrip('.?')}?",
+        sources,
+        priority
+        if priority is not None
+        else max((_activity_priority(source, today, stale_pr_days) for source in sources), default=0),
+    )
 
 
 def _standup_questions(
@@ -164,28 +285,39 @@ def _standup_questions(
     risks: tuple[GeneratedBullet, ...],
     carryover: tuple[GeneratedBullet, ...],
     activities: list[Activity],
+    today: date,
+    stale_pr_days: int,
 ) -> tuple[GeneratedBullet, ...]:
-    questions: list[tuple[str, tuple[Activity, ...]]] = []
+    questions: list[GeneratedBullet] = []
     for blocker in blockers:
         source = blocker.sources[0] if blocker.sources else None
         subject = source.source_id if source else "this blocker"
         detail = source.blocker_signal or source.description or source.title if source else blocker.text
-        questions.append((f"What action is needed today to unblock {subject}: {detail}", blocker.sources))
+        questions.append(
+            _question(f"What action is needed today to unblock {subject}: {detail}", blocker.sources, blocker.priority)
+        )
     for risk in risks:
         source = risk.sources[0] if risk.sources else None
         subject = source.source_id if source else "this risky pull request"
-        questions.append((f"What is the next step to reduce risk on {subject}: {risk.text}", risk.sources))
+        questions.append(
+            _question(f"What is the next step to reduce risk on {subject}: {risk.text}", risk.sources, risk.priority)
+        )
     for decision in decisions:
         source = decision.sources[0] if decision.sources else None
         subject = source.source_id if source else "this decision"
         detail = source.decision_signal if source and source.decision_signal else decision.text
-        questions.append((f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources))
+        questions.append(
+            _question(
+                f"Who can make or facilitate the decision for {subject}: {detail}", decision.sources, decision.priority
+            )
+        )
     for activity in activities:
         if activity.activity_type == "chat_signal":
             questions.append(
-                (
+                _question(
                     f"Who can clarify ownership or next steps from chat: {activity.description}",
                     (activity,),
+                    _activity_priority(activity, today, stale_pr_days),
                 )
             )
             continue
@@ -198,31 +330,31 @@ def _standup_questions(
             missing.append("status")
         if missing:
             questions.append(
-                (
+                _question(
                     f"Who owns {activity.source_id} and what is its current status; missing {', '.join(missing)}",
                     (activity,),
+                    _activity_priority(activity, today, stale_pr_days),
                 )
             )
     for item in carryover:
         source = item.sources[0] if item.sources else None
         subject = source.source_id if source and source.source_id != "prior-standup" else "prior standup carryover"
         questions.append(
-            (
+            _question(
                 f"Should we keep carrying over {subject}, and what changed since the last standup: {item.text}",
                 item.sources,
+                item.priority,
             )
         )
     deduped: list[GeneratedBullet] = []
     seen: set[str] = set()
-    for text, sources in questions:
-        key = text.lower()
+    for question in questions:
+        key = question.text.lower()
         if key in seen:
             continue
         seen.add(key)
-        deduped.append(_question(text, sources))
-        if len(deduped) == 9:
-            break
-    return tuple(deduped)
+        deduped.append(question)
+    return _prioritize(tuple(deduped), today, stale_pr_days)[:9]
 
 
 def _references(activities: list[Activity]) -> tuple[dict[str, str], ...]:
@@ -264,15 +396,23 @@ def _agenda(
     activities: list[Activity],
 ) -> tuple[GeneratedBullet, ...]:
     items: list[GeneratedBullet] = []
-    items.extend(GeneratedBullet(f"Confirm next step: {b.text}", b.sources) for b in blockers)
-    items.extend(GeneratedBullet(f"Make decision: {d.text}", d.sources) for d in decisions)
+    items.extend(GeneratedBullet(f"Confirm next step: {b.text}", b.sources, b.priority) for b in blockers)
+    items.extend(GeneratedBullet(f"Make decision: {d.text}", d.sources, d.priority) for d in decisions)
     items.extend(
-        GeneratedBullet(f"Review risk: {r.text}", r.sources)
+        GeneratedBullet(f"Review risk: {r.text}", r.sources, r.priority)
         for r in risks
         if "failing CI" in r.text or "open for" in r.text
     )
     review_prs = [pr for pr in _open_prs(activities) if _needs_review(pr)]
-    items.extend(GeneratedBullet(f"Confirm review path for {pr.source_id}: {pr.title}.", (pr,)) for pr in review_prs)
+    items.extend(
+        GeneratedBullet(
+            f"Confirm review path for {pr.source_id}: {pr.title}.",
+            (pr,),
+            _activity_priority(pr),
+        )
+        for pr in review_prs
+    )
+    items = list(_prioritize(tuple(items)))
     deduped: list[GeneratedBullet] = []
     seen: set[str] = set()
     for item in items:
@@ -301,11 +441,15 @@ def generate_pre_read_document(
 ) -> PreReadDocument:
     today = today or date.today()
     issues = sorted(_activities(activities, "jira_issue"), key=lambda activity: activity.source_id)
-    progress = tuple(
-        GeneratedBullet(text.strip().rstrip(".") + ".", sources)
-        for issue in issues
-        if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}
-        for text, sources in [_issue_summary(issue, activities)]
+    progress = _with_priorities(
+        tuple(
+            GeneratedBullet(text.strip().rstrip(".") + ".", sources)
+            for issue in issues
+            if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}
+            for text, sources in [_issue_summary(issue, activities)]
+        ),
+        today,
+        stale_pr_days,
     )
     issue_blockers = tuple(
         GeneratedBullet(
@@ -320,7 +464,7 @@ def generate_pre_read_document(
         for activity in activities
         if activity.activity_type == "chat_blocker"
     )
-    blockers = (*issue_blockers, *chat_blockers)
+    blockers = _prioritize((*issue_blockers, *chat_blockers), today, stale_pr_days)
     issue_decisions = tuple(
         GeneratedBullet(f"{issue.decision_signal} ({issue.source_id}).", (issue,))
         for issue in issues
@@ -331,23 +475,31 @@ def generate_pre_read_document(
         for activity in activities
         if activity.activity_type == "chat_decision"
     )
-    decisions = (*issue_decisions, *chat_decisions)
-    risks = tuple(
-        risk
-        for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id)
-        if (risk := _pr_risk(pr, today, stale_pr_days))
+    decisions = _prioritize((*issue_decisions, *chat_decisions), today, stale_pr_days)
+    risks = _prioritize(
+        tuple(
+            risk
+            for pr in sorted(_open_prs(activities), key=lambda activity: activity.source_id)
+            if (risk := _pr_risk(pr, today, stale_pr_days))
+        ),
+        today,
+        stale_pr_days,
     )
-    carryover = tuple(
-        GeneratedBullet(activity.title, (activity,))
-        for activity in activities
-        if activity.activity_type
-        in {
-            "prior_blocker",
-            "prior_decision",
-            "prior_carryover",
-            "chat_follow_up",
-            "chat_signal",
-        }
+    carryover = _prioritize(
+        tuple(
+            GeneratedBullet(activity.title, (activity,))
+            for activity in activities
+            if activity.activity_type
+            in {
+                "prior_blocker",
+                "prior_decision",
+                "prior_carryover",
+                "chat_follow_up",
+                "chat_signal",
+            }
+        ),
+        today,
+        stale_pr_days,
     )
     summary = _summary(progress, blockers, decisions, risks)
     return PreReadDocument(
@@ -362,7 +514,7 @@ def generate_pre_read_document(
         risks=risks,
         carryover=carryover,
         suggested_agenda=_agenda(blockers, decisions, risks, activities),
-        suggested_questions=_standup_questions(blockers, decisions, risks, carryover, activities),
+        suggested_questions=_standup_questions(blockers, decisions, risks, carryover, activities, today, stale_pr_days),
         source_references=_references(activities),
     )
 
