@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from .models import Activity
+
+ReviewStatus = Literal["draft", "approved", "rejected"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,10 @@ class PreReadDocument:
     generated_at: str
     team_name: str | None
     source_mode: str
+    review_status: ReviewStatus
+    reviewed_at: str | None
+    reviewer: str | None
+    review_notes: str | None
     data_window: dict[str, str] | None
     executive_summary: str
     progress: tuple[GeneratedBullet, ...]
@@ -65,6 +71,7 @@ class PreReadDocument:
         payload: dict[str, Any] = {
             "generated_at": self.generated_at,
             "source_mode": self.source_mode,
+            "review_status": self.review_status,
             "executive_summary": self.executive_summary,
             "progress": [item.to_json_item() for item in self.progress],
             "blockers": [item.to_json_item() for item in self.blockers],
@@ -77,6 +84,12 @@ class PreReadDocument:
         }
         if self.team_name:
             payload["team_name"] = self.team_name
+        if self.reviewed_at:
+            payload["reviewed_at"] = self.reviewed_at
+        if self.reviewer:
+            payload["reviewer"] = self.reviewer
+        if self.review_notes:
+            payload["review_notes"] = self.review_notes
         if self.data_window:
             payload["data_window"] = self.data_window
         return payload
@@ -438,8 +451,13 @@ def generate_pre_read_document(
     stale_pr_days: int,
     today: date | None = None,
     source_mode: str = "sample",
+    review_status: ReviewStatus = "draft",
+    reviewer: str | None = None,
+    review_notes: str | None = None,
 ) -> PreReadDocument:
     today = today or date.today()
+    if review_status not in {"draft", "approved", "rejected"}:
+        raise ValueError(f"Unsupported review_status {review_status!r}")
     issues = sorted(_activities(activities, "jira_issue"), key=lambda activity: activity.source_id)
     progress = _with_priorities(
         tuple(
@@ -506,6 +524,10 @@ def generate_pre_read_document(
         generated_at=datetime.combine(today, datetime.min.time(), tzinfo=UTC).isoformat(),
         team_name=team_name,
         source_mode=source_mode,
+        review_status=review_status,
+        reviewed_at=(datetime.now(UTC).isoformat() if review_status in {"approved", "rejected"} else None),
+        reviewer=reviewer,
+        review_notes=review_notes,
         data_window=_data_window(activities),
         executive_summary=summary,
         progress=progress,
@@ -527,10 +549,23 @@ def render_pre_read_markdown(document: PreReadDocument) -> str:
     question_lines = [item.render() for item in document.suggested_questions] or [
         "- No high-value standup questions found in the supplied sources."
     ]
+    review_lines = [
+        "## Review Metadata",
+        "",
+        f"- Status: {document.review_status}",
+    ]
+    if document.reviewed_at:
+        review_lines.append(f"- Reviewed at: {document.reviewed_at}")
+    if document.reviewer:
+        review_lines.append(f"- Reviewer: {document.reviewer}")
+    if document.review_notes:
+        review_lines.append(f"- Notes: {document.review_notes}")
     lines = [
         f"# Standup Pre-Read: {document.team_name or 'Team'}",
         "",
         f"Generated: {generated_date}",
+        "",
+        *review_lines,
         "",
         "## Executive Summary",
         "",

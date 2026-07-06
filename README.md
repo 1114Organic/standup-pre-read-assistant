@@ -11,7 +11,7 @@ The first build target is a thin-slice MVP:
 3. Read prior standup notes.
 4. Optionally read local sample Slack/Teams-style chat messages.
 5. Generate a markdown standup pre-read, including concise suggested standup questions.
-6. Save the draft locally.
+6. Save the draft locally with review metadata so generated pre-reads start as facilitator-review drafts.
 7. Add tests that verify the output structure.
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data.
@@ -53,7 +53,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --json-output-path output/standup-pre-read.json
 ```
 
-The JSON output is generated from the same structured pre-read document as markdown, so enabling it does not change the markdown draft. It includes metadata (`generated_at`, `team_name` when configured, `source_mode`, and a `data_window` when source timestamps are available), `executive_summary`, `progress`, `blockers`, `decisions`, `risks`, `carryover`, `suggested_agenda`, `suggested_questions`, and `source_references`. Each structured list item includes `text` and `source_refs`, plus `priority`, `confidence`, and `related_work_items` when those values are available; markdown sections keep their existing format while using priority to put high-signal topics first.
+The JSON output is generated from the same structured pre-read document as markdown, so enabling it does not change the markdown draft. It includes metadata (`generated_at`, `team_name` when configured, `source_mode`, `review_status`, optional `reviewed_at`, optional `reviewer`, optional `review_notes`, and a `data_window` when source timestamps are available), `executive_summary`, `progress`, `blockers`, `decisions`, `risks`, `carryover`, `suggested_agenda`, `suggested_questions`, and `source_references`. Each structured list item includes `text` and `source_refs`, plus `priority`, `confidence`, and `related_work_items` when those values are available; markdown sections keep their existing format while using priority to put high-signal topics first.
 
 To run the richer demo-data scenario, point the same sample-mode CLI at the alternate example files:
 
@@ -69,6 +69,23 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
 ```
 
 The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, local chat blockers/decisions/follow-ups, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.
+
+## Facilitator Review Mode
+
+Generated pre-reads are local drafts by default. Markdown includes a small `Review Metadata` section near the top, and JSON includes `review_status` with the default value `draft`. A facilitator can stamp a local review decision without adding any web UI or external integrations:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --source-mode sample \
+  --output-path output/reviewed-pre-read.md \
+  --json-output-path output/reviewed-pre-read.json \
+  --review-status approved \
+  --reviewer "Facilitator" \
+  --review-notes "Ready to share." \
+  --approved-output-path output/approved-pre-read.md
+```
+
+Allowed review statuses are `draft`, `approved`, and `rejected`. When `--review-status approved` and `--approved-output-path` are both provided, the CLI also writes the approved markdown copy to that path. Rejected pre-reads keep the review metadata in the normal markdown and JSON outputs, but never write an approved output file.
 
 ## Makefile Commands
 
