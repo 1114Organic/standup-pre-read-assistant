@@ -46,13 +46,19 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser.add_argument(
         "--source-mode",
         default=Config.source_mode,
-        help="Source connector mode to use. Currently supported: sample.",
+        help="Source connector mode to use. Supported: sample, jira_mcp_sample.",
     )
     parser.add_argument(
         "--jira-path",
         type=Path,
         default=Config.jira_path,
         help="Path to the sample Jira JSON file.",
+    )
+    parser.add_argument(
+        "--jira-mcp-path",
+        type=Path,
+        default=Config.jira_mcp_path,
+        help="Path to the local Jira MCP-style sample response JSON file.",
     )
     parser.add_argument(
         "--github-path",
@@ -110,6 +116,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
     return Config(
         source_mode=args.source_mode,
         jira_path=args.jira_path,
+        jira_mcp_path=args.jira_mcp_path,
         github_path=args.github_path,
         prior_standup_path=args.prior_standup_path,
         chat_path=args.chat_path,

@@ -14,7 +14,7 @@ The first build target is a thin-slice MVP:
 6. Save the draft locally with review metadata so generated pre-reads start as facilitator-review drafts.
 7. Add tests that verify the output structure.
 
-Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data.
+Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
 
 
 ## MVP Demo
@@ -38,6 +38,16 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --chat-path examples/chat-rich-sample.json \
   --output-path output/rich-standup-pre-read.md \
   --json-output-path output/rich-standup-pre-read.json
+```
+
+Run the local mock Jira MCP sample demo with markdown and JSON output:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --source-mode jira_mcp_sample \
+  --jira-mcp-path examples/jira-mcp-sample-response.json \
+  --output-path output/jira-mcp-standup-pre-read.md \
+  --json-output-path output/jira-mcp-standup-pre-read.json
 ```
 
 ## Local Usage
@@ -66,7 +76,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli --source-mode sample --output-pat
 standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 ```
 
-The default configuration reads the issue, pull request, and prior-standup sample files in `examples/`. Add `--chat-path examples/chat-rich-sample.json` to include local sample Slack/Teams-style messages; chat messages are normalized into the same activity model and can contribute blockers, decisions, carryover/follow-ups, standup questions, and source references. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Live Jira, Jira MCP, GitHub API, and live messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error.
+The default configuration reads the issue, pull request, and prior-standup sample files in `examples/`. Use `--source-mode jira_mcp_sample --jira-mcp-path examples/jira-mcp-sample-response.json` to replace the direct sample Jira issue file with a local mock Jira MCP-style tool response while still optionally using local GitHub, prior standup, and chat sample paths. Add `--chat-path examples/chat-rich-sample.json` to include local sample Slack/Teams-style messages; chat messages are normalized into the same activity model and can contribute blockers, decisions, carryover/follow-ups, standup questions, and source references. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Real Jira MCP, live Jira, GitHub API, and live messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error. The `jira_mcp_sample` connector is a mock adapter only: it reads local JSON, requires no credentials or MCP server, and performs no network calls.
 
 To write a machine-readable JSON version alongside the markdown, pass `--json-output-path`:
 
@@ -151,6 +161,7 @@ python3 -m mypy
 │   └── tasks.md
 ├── examples
 │   ├── jira-sample.json
+│   ├── jira-mcp-sample-response.json
 │   ├── github-pr-sample.json
 │   ├── prior-standup.md
 │   ├── jira-rich-sample.json

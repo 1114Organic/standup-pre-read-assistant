@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from standup_pre_read.cli import build_pre_read, main, parse_args
-from standup_pre_read.collectors import load_chat_sample, load_github_pr_sample, load_jira_sample, load_prior_standup
+from standup_pre_read.collectors import (
+    load_chat_sample,
+    load_github_pr_sample,
+    load_jira_mcp_sample,
+    load_jira_sample,
+    load_prior_standup,
+)
 from standup_pre_read.config import Config
 from standup_pre_read.generator import generate_pre_read, generate_pre_read_document
 from standup_pre_read.models import Activity
@@ -101,6 +107,93 @@ def test_json_output_includes_chat_derived_items(tmp_path: Path) -> None:
     assert any("chat-003" in item["source_refs"] for item in payload["carryover"])
     assert any(reference["source_system"] == "chat" for reference in payload["source_references"])
 
+
+
+def test_jira_mcp_sample_response_loads_and_normalizes() -> None:
+    jira_data = load_jira_mcp_sample(Path("examples/jira-mcp-sample-response.json"))
+    activities = normalize_jira(jira_data)
+
+    assert {issue["key"] for issue in jira_data["issues"]} == {"MCP-101", "MCP-102", "MCP-103", "MCP-104", "MCP-105"}
+    assert all(activity.activity_type == "jira_issue" for activity in activities)
+    blocked = next(activity for activity in activities if activity.source_id == "MCP-103")
+    decision = next(activity for activity in activities if activity.source_id == "MCP-104")
+    unclear = next(activity for activity in activities if activity.source_id == "MCP-105")
+    assert blocked.blocker_signal == "Waiting on generic dependency approval."
+    assert decision.decision_signal == "Decide whether the sample rollout uses option A or option B."
+    assert unclear.owner is None
+    assert unclear.status == "Unknown"
+    assert blocked.source_url == "https://jira.example.invalid/browse/MCP-103"
+
+
+def test_parse_args_accepts_jira_mcp_sample_options(tmp_path: Path) -> None:
+    output_path = tmp_path / "mcp-pre-read.md"
+    config = parse_args(
+        [
+            "--source-mode",
+            "jira_mcp_sample",
+            "--jira-mcp-path",
+            "examples/jira-mcp-sample-response.json",
+            "--github-path",
+            "examples/github-pr-rich-sample.json",
+            "--prior-standup-path",
+            "examples/prior-standup-rich.md",
+            "--chat-path",
+            "examples/chat-rich-sample.json",
+            "--output-path",
+            str(output_path),
+        ]
+    )
+
+    assert config.source_mode == "jira_mcp_sample"
+    assert config.jira_mcp_path == Path("examples/jira-mcp-sample-response.json")
+    assert config.output_path == output_path
+
+
+def test_jira_mcp_sample_generates_markdown_and_json_with_sources(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "jira-mcp-pre-read.md"
+    json_output_path = tmp_path / "jira-mcp-pre-read.json"
+
+    markdown = build_pre_read(
+        Config(
+            source_mode="jira_mcp_sample",
+            jira_mcp_path=Path("examples/jira-mcp-sample-response.json"),
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert payload["source_mode"] == "jira_mcp_sample"
+    assert "MCP-101 is done" in markdown
+    assert "MCP-102 is in progress" in markdown
+    assert "MCP-103 is blocked Waiting on generic dependency approval" in markdown
+    assert "Decide whether the sample rollout uses option A or option B. (MCP-104)." in markdown
+    assert "Who owns MCP-105 and what is its current status; missing owner, status" in markdown
+    assert "https://jira.example.invalid/browse/MCP-104" in markdown
+    assert any("MCP-101" in item["source_refs"] for item in payload["progress"])
+    assert any("MCP-103" in item["source_refs"] for item in payload["blockers"])
+    assert any("MCP-104" in item["source_refs"] for item in payload["decisions"])
+    assert any("MCP-105" in item["source_refs"] for item in payload["suggested_questions"])
+    assert any(reference["url"].endswith("/MCP-103") for reference in payload["source_references"])
+
+
+def test_jira_mcp_sample_does_not_attempt_real_connection(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import socket
+
+    def fail_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("network connection attempted")
+
+    monkeypatch.setattr(socket, "create_connection", fail_network)
+
+    markdown = build_pre_read(
+        Config(
+            source_mode="jira_mcp_sample",
+            jira_mcp_path=Path("examples/jira-mcp-sample-response.json"),
+            output_path=tmp_path / "jira-mcp-pre-read.md",
+        )
+    )
+
+    assert "MCP-101 is done" in markdown
 
 def test_generated_pre_read_includes_required_sections() -> None:
     markdown = _sample_markdown()

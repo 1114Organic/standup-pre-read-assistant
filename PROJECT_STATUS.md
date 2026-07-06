@@ -6,7 +6,7 @@ This document summarizes the current generic MVP state for the Standup Pre-Read 
 
 The current MVP generates a local markdown standup pre-read from sample input files. In sample mode, it:
 
-- Loads sample issue data, sample pull request data, optional sample chat messages, and prior standup notes from the repository.
+- Loads sample issue data, a local mock Jira MCP-style response file, sample pull request data, optional sample chat messages, and prior standup notes from the repository.
 - Normalizes those inputs into a common activity model.
 - Produces a markdown pre-read with sections for executive summary, recent progress, blockers, decisions, risks, carryover, a suggested agenda, concise source-backed standup questions, and source references, including useful chat-derived signals when a chat sample is supplied.
 - Optionally writes a structured JSON version of the same pre-read content for downstream tools, including local facilitator review metadata.
@@ -56,6 +56,16 @@ PYTHONPATH=src python -m standup_pre_read.cli \
   --json-output-path output/custom-pre-read.json
 ```
 
+Run the local mock Jira MCP sample mode:
+
+```bash
+PYTHONPATH=src python -m standup_pre_read.cli \
+  --source-mode jira_mcp_sample \
+  --jira-mcp-path examples/jira-mcp-sample-response.json \
+  --output-path output/jira-mcp-standup-pre-read.md \
+  --json-output-path output/jira-mcp-standup-pre-read.json
+```
+
 The JSON file is generated from the same structured pre-read document as the markdown draft. It includes `generated_at`, `source_mode`, `team_name` when configured, data window when available, the executive summary, progress, blockers, decisions, risks, carryover, suggested agenda, suggested questions, and source references. List items include `text` and `source_refs`, plus confidence and related work items when available. Review metadata includes `review_status` by default and may include `reviewed_at`, `reviewer`, and `review_notes`.
 
 To approve a local draft and write a separate approved markdown copy:
@@ -94,12 +104,13 @@ make demo
 
 Supported today:
 
-- Sample issue JSON stored in the repository.
+- Sample issue JSON stored in the repository through `--source-mode sample`.
+- Local mock Jira MCP-style response JSON stored in the repository through `--source-mode jira_mcp_sample` and `--jira-mcp-path examples/jira-mcp-sample-response.json`.
 - Sample pull request JSON stored in the repository.
 - Sample prior standup markdown stored in the repository.
 - Optional local sample Slack/Teams-style chat JSON stored in the repository via `--chat-path`.
 
-The only supported source mode is `sample`. The source loading layer is intentionally separated from normalization and generation so future connectors can be added without rewriting the whole flow.
+Supported source modes are `sample` and `jira_mcp_sample`. The Jira MCP sample mode is a local mock/sample connector only: it adapts a generic MCP tool-response fixture into the existing normalized activity model, does not contact a real MCP server, does not call Jira, and requires no credentials. The source loading layer is intentionally separated from normalization and generation so future connectors can be added without rewriting the whole flow.
 
 ## 4. What Is Intentionally Out of Scope for the MVP
 
@@ -107,7 +118,7 @@ The MVP intentionally does not include:
 
 - Live issue tracker API calls.
 - Live source hosting API calls.
-- MCP-backed live connectors.
+- MCP-backed live connectors. Real Jira MCP integration remains future work and requires an approved work environment, approved connection details, and appropriate credentials/secrets handling.
 - Live chat, email, or notification delivery. Local sample chat JSON ingestion is supported for MVP validation.
 - Deployment automation or cloud runtime configuration.
 - Authentication, authorization, or secret management for external services.
@@ -155,7 +166,7 @@ Structured JSON output is now available via `--json-output-path`. Future enhance
 
 ### Future Jira MCP Connector
 
-Add a future MCP-based issue connector that can load live issue data through a configurable integration while preserving the existing normalized activity model.
+The repository now includes a local mock Jira MCP sample adapter for fixture-based validation. A real MCP-based issue connector that loads live issue data remains future work and should only be added in an approved work environment while preserving the existing normalized activity model.
 
 ### Future GitHub API Connector
 
