@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "id": "mock-jira-search-001",
+  "metadata": {
+    "team": "Example Delivery Team",
+    "project": "Sample Project",
+    "generated_at": "2026-06-16T13:00:00Z"
+  },
+  "result": {
+    "toolName": "jira.search_issues",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"issues\":[{\"key\":\"MCP-101\",\"url\":\"https://jira.example.invalid/browse/MCP-101\",\"fields\":{\"summary\":\"Complete sample onboarding checklist\",\"status\":{\"name\":\"Done\"},\"assignee\":{\"displayName\":\"Sample Owner One\"},\"updated\":\"2026-06-16T09:15:00Z\",\"project\":{\"name\":\"Sample Project\"},\"description\":\"Checklist is complete and ready for facilitator review.\"}},{\"key\":\"MCP-102\",\"url\":\"https://jira.example.invalid/browse/MCP-102\",\"fields\":{\"summary\":\"Build generic status digest\",\"status\":{\"name\":\"In Progress\"},\"assignee\":{\"displayName\":\"Sample Owner Two\"},\"updated\":\"2026-06-16T10:30:00Z\",\"project\":{\"name\":\"Sample Project\"},\"description\":\"Implementation is moving through the local sample workflow.\"}},{\"key\":\"MCP-103\",\"url\":\"https://jira.example.invalid/browse/MCP-103\",\"fields\":{\"summary\":\"Resolve sample dependency approval\",\"status\":{\"name\":\"Blocked\"},\"assignee\":{\"displayName\":\"Sample Owner Three\"},\"updated\":\"2026-06-16T11:00:00Z\",\"project\":{\"name\":\"Sample Project\"},\"description\":\"Cannot continue until generic dependency approval is available.\",\"blocked_reason\":\"Waiting on generic dependency approval.\"}},{\"key\":\"MCP-104\",\"url\":\"https://jira.example.invalid/browse/MCP-104\",\"fields\":{\"summary\":\"Choose sample rollout option\",\"status\":{\"name\":\"In Progress\"},\"assignee\":{\"displayName\":\"Sample Facilitator\"},\"updated\":\"2026-06-16T11:45:00Z\",\"project\":{\"name\":\"Sample Project\"},\"description\":\"Implementation depends on a generic rollout choice.\",\"decision_needed\":\"Decide whether the sample rollout uses option A or option B.\"}},{\"key\":\"MCP-105\",\"url\":\"https://jira.example.invalid/browse/MCP-105\",\"fields\":{\"summary\":\"Clarify sample ownership and state\",\"status\":{\"name\":\"Unknown\"},\"updated\":\"2026-06-16T12:15:00Z\",\"project\":{\"name\":\"Sample Project\"},\"description\":\"Ownership and current status need facilitator confirmation.\"}}]}"
+      }
+    ]
+  }
+}

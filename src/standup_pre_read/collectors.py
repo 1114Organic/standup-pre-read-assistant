@@ -14,6 +14,80 @@ def load_github_pr_sample(path: Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
+def load_jira_mcp_sample(path: Path) -> dict[str, Any]:
+    """Load a local Jira MCP-style tool response and adapt it to sample issue data.
+
+    This is intentionally file-only: it does not create an MCP client, open a
+    network connection, or require credentials. The fixture may expose issue
+    records either as top-level ``issues`` data or inside MCP ``content`` text
+    payloads containing JSON.
+    """
+    payload = cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+    return jira_mcp_response_to_jira_sample(payload)
+
+
+def jira_mcp_response_to_jira_sample(payload: dict[str, Any]) -> dict[str, Any]:
+    issues = _extract_mcp_issues(payload)
+    return {
+        "team": payload.get("team") or payload.get("metadata", {}).get("team"),
+        "issues": [_mcp_issue_to_sample_issue(issue) for issue in issues],
+    }
+
+
+def _extract_mcp_issues(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    direct = payload.get("issues")
+    if isinstance(direct, list):
+        return [issue for issue in direct if isinstance(issue, dict)]
+
+    tool_result = payload.get("result") if isinstance(payload.get("result"), dict) else payload
+    content = tool_result.get("content", []) if isinstance(tool_result, dict) else []
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+        if isinstance(item.get("json"), dict) and isinstance(item["json"].get("issues"), list):
+            return [issue for issue in item["json"]["issues"] if isinstance(issue, dict)]
+        text = item.get("text")
+        if not isinstance(text, str):
+            continue
+        try:
+            decoded = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(decoded, dict) and isinstance(decoded.get("issues"), list):
+            return [issue for issue in decoded["issues"] if isinstance(issue, dict)]
+    return []
+
+
+def _field_value(fields: dict[str, Any], key: str) -> Any:
+    value = fields.get(key)
+    if isinstance(value, dict):
+        return value.get("displayName") or value.get("name") or value.get("value")
+    return value
+
+
+def _mcp_issue_to_sample_issue(issue: dict[str, Any]) -> dict[str, Any]:
+    raw_fields = issue.get("fields")
+    fields: dict[str, Any] = cast(dict[str, Any], raw_fields) if isinstance(raw_fields, dict) else {}
+    status = _field_value(fields, "status") or issue.get("status") or "Unknown"
+    assignee = _field_value(fields, "assignee") or issue.get("assignee")
+    blocked_reason = issue.get("blocked_reason") or fields.get("blocked_reason")
+    decision_needed = issue.get("decision_needed") or fields.get("decision_needed")
+    key = str(issue.get("key") or issue.get("id") or "MCP-UNKNOWN")
+    return {
+        "key": key,
+        "title": issue.get("title") or fields.get("summary") or key,
+        "status": status,
+        "assignee": assignee,
+        "updated": issue.get("updated") or fields.get("updated"),
+        "sprint": issue.get("sprint") or _field_value(fields, "project"),
+        "url": issue.get("url") or issue.get("self"),
+        "summary": issue.get("summary") or fields.get("description") or fields.get("summary") or "",
+        "blocker": bool(issue.get("blocker") or blocked_reason or str(status).lower() == "blocked"),
+        "blocked_reason": blocked_reason,
+        "decision_needed": decision_needed,
+    }
+
+
 def load_prior_standup(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 

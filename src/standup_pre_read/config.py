@@ -10,6 +10,7 @@ class Config:
     team_name: str = "Example Platform Team"
     source_mode: str = "sample"
     jira_path: Path = Path("examples/jira-sample.json")
+    jira_mcp_path: Path = Path("examples/jira-mcp-sample-response.json")
     github_path: Path = Path("examples/github-pr-sample.json")
     prior_standup_path: Path = Path("examples/prior-standup.md")
     chat_path: Path | None = None
