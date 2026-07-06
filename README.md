@@ -16,6 +16,30 @@ The first build target is a thin-slice MVP:
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data.
 
+
+## MVP Demo
+
+The v0.1.0 MVP is a local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.1.0 summary.
+
+Run the standard demo:
+
+```bash
+make demo
+```
+
+Run the rich chat demo with markdown and JSON output:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --source-mode sample \
+  --jira-path examples/jira-rich-sample.json \
+  --github-path examples/github-pr-rich-sample.json \
+  --prior-standup-path examples/prior-standup-rich.md \
+  --chat-path examples/chat-rich-sample.json \
+  --output-path output/rich-standup-pre-read.md \
+  --json-output-path output/rich-standup-pre-read.json
+```
+
 ## Local Usage
 
 Create an isolated development environment and install the project with its test/lint tooling:
