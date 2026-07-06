@@ -663,3 +663,92 @@ def test_build_pre_read_can_create_default_config() -> None:
     markdown = build_pre_read()
 
     assert "# Standup Pre-Read: Example Platform Team" in markdown
+
+
+def test_default_review_status_is_draft_in_markdown_and_json(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "draft.md"
+    json_output_path = tmp_path / "draft.json"
+
+    markdown = build_pre_read(Config(output_path=markdown_output_path, json_output_path=json_output_path))
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert "## Review Metadata" in markdown
+    assert "- Status: draft" in markdown
+    assert payload["review_status"] == "draft"
+    assert "reviewed_at" not in payload
+
+
+def test_approved_review_status_appears_and_writes_approved_output(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "approved-draft.md"
+    json_output_path = tmp_path / "approved.json"
+    approved_output_path = tmp_path / "approved.md"
+
+    markdown = build_pre_read(
+        Config(
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+            review_status="approved",
+            reviewer="Facilitator",
+            review_notes="Ready to share.",
+            approved_output_path=approved_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert "- Status: approved" in markdown
+    assert "- Reviewer: Facilitator" in markdown
+    assert "- Notes: Ready to share." in markdown
+    assert payload["review_status"] == "approved"
+    assert payload["reviewer"] == "Facilitator"
+    assert payload["review_notes"] == "Ready to share."
+    assert "reviewed_at" in payload
+    assert approved_output_path.read_text(encoding="utf-8") == markdown
+
+
+def test_rejected_review_status_appears_without_approved_output(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "rejected.md"
+    json_output_path = tmp_path / "rejected.json"
+    approved_output_path = tmp_path / "should-not-exist.md"
+
+    markdown = build_pre_read(
+        Config(
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+            review_status="rejected",
+            reviewer="Facilitator",
+            review_notes="Needs edits.",
+            approved_output_path=approved_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+
+    assert "- Status: rejected" in markdown
+    assert "- Reviewer: Facilitator" in markdown
+    assert "- Notes: Needs edits." in markdown
+    assert payload["review_status"] == "rejected"
+    assert payload["reviewer"] == "Facilitator"
+    assert payload["review_notes"] == "Needs edits."
+    assert "reviewed_at" in payload
+    assert not approved_output_path.exists()
+
+
+def test_parse_args_accepts_review_options(tmp_path: Path) -> None:
+    approved_output_path = tmp_path / "approved.md"
+
+    config = parse_args(
+        [
+            "--review-status",
+            "approved",
+            "--reviewer",
+            "Facilitator",
+            "--review-notes",
+            "Ready.",
+            "--approved-output-path",
+            str(approved_output_path),
+        ]
+    )
+
+    assert config.review_status == "approved"
+    assert config.reviewer == "Facilitator"
+    assert config.review_notes == "Ready."
+    assert config.approved_output_path == approved_output_path

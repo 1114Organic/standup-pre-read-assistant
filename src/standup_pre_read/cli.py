@@ -22,10 +22,16 @@ def build_pre_read(config: Config | None = None) -> str:
         config.team_name,
         config.stale_pr_days,
         source_mode=config.source_mode,
+        review_status=config.review_status,
+        reviewer=config.reviewer,
+        review_notes=config.review_notes,
     )
     markdown = render_pre_read_markdown(document)
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
     config.output_path.write_text(markdown, encoding="utf-8")
+    if config.review_status == "approved" and config.approved_output_path is not None:
+        config.approved_output_path.parent.mkdir(parents=True, exist_ok=True)
+        config.approved_output_path.write_text(markdown, encoding="utf-8")
     if config.json_output_path is not None:
         config.json_output_path.parent.mkdir(parents=True, exist_ok=True)
         config.json_output_path.write_text(
@@ -78,6 +84,28 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         default=Config.json_output_path,
         help="Optional path where a structured JSON version of the pre-read should be written.",
     )
+    parser.add_argument(
+        "--review-status",
+        choices=("draft", "approved", "rejected"),
+        default=Config.review_status,
+        help="Local facilitator review status to attach to the generated pre-read.",
+    )
+    parser.add_argument(
+        "--reviewer",
+        default=Config.reviewer,
+        help="Optional facilitator name or identifier for reviewed pre-reads.",
+    )
+    parser.add_argument(
+        "--review-notes",
+        default=Config.review_notes,
+        help="Optional local review notes to include in markdown and JSON output.",
+    )
+    parser.add_argument(
+        "--approved-output-path",
+        type=Path,
+        default=Config.approved_output_path,
+        help="Optional path for an approved markdown copy; written only with --review-status approved.",
+    )
     args = parser.parse_args(argv)
     return Config(
         source_mode=args.source_mode,
@@ -87,6 +115,10 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         chat_path=args.chat_path,
         output_path=args.output_path,
         json_output_path=args.json_output_path,
+        review_status=args.review_status,
+        reviewer=args.reviewer,
+        review_notes=args.review_notes,
+        approved_output_path=args.approved_output_path,
     )
 
 
@@ -99,6 +131,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     print(f"Wrote {config.output_path}")
     if config.json_output_path is not None:
         print(f"Wrote {config.json_output_path}")
+    if config.review_status == "approved" and config.approved_output_path is not None:
+        print(f"Wrote {config.approved_output_path}")
 
 
 if __name__ == "__main__":
