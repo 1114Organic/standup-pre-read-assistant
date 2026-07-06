@@ -16,6 +16,8 @@ The current MVP generates a local markdown standup pre-read from sample input fi
 
 The MVP is designed as a thin slice that proves the pre-read generation flow before adding live integrations.
 
+The local MVP has been documented as the `v0.1.0` demo baseline in `RELEASE_NOTES.md` for use as a stable checkpoint before live connector work begins.
+
 ## 2. How to Run It Locally
 
 Create and activate a virtual environment, then install the project with development tooling:
