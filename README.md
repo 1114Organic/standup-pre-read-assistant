@@ -17,7 +17,7 @@ The first build target is a thin-slice MVP:
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
 
 
-## MVP Demo
+## v0.1.0 MVP Demo
 
 The v0.1.0 MVP is a local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.1.0 summary.
 

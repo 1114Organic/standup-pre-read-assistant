@@ -1,75 +1,63 @@
 # Release Notes
 
-## v0.1.0 MVP Demo Baseline
+## Release: v0.1.0 Local MVP
 
-This checkpoint captures the local sample-mode MVP as a stable demo baseline before adding live integrations.
+This release checkpoint documents the current local MVP as a stable demo baseline before adding live integrations. It is intentionally documentation-focused and preserves the current application behavior.
 
-### What the MVP Does
+## What this MVP does
 
-- Generates a local standup pre-read markdown draft from repository sample data.
-- Normalizes sample issue, pull request, prior standup, and optional sample chat activity into a shared activity model.
-- Produces an executive summary, recent progress, blockers, decisions, risks, carryover, suggested agenda, suggested standup questions, and source references.
-- Writes facilitator review metadata into generated markdown and JSON output.
-- Supports local review decisions with `draft`, `approved`, and `rejected` statuses.
-- Optionally writes a structured JSON version of the same pre-read content.
-- Optionally writes a separate approved markdown copy when a facilitator marks the draft as approved.
+- Generates a local standup pre-read from checked-in sample data.
+- Normalizes sample issue, pull request, prior standup, optional chat, and local mock Jira MCP-style activity into a shared activity model.
+- Produces concise, source-backed sections for executive summary, progress, blockers, decisions, risks, carryover, suggested agenda, suggested standup questions, and source references.
+- Writes generated pre-reads as facilitator-review drafts by default.
+- Supports local facilitator review metadata with `draft`, `approved`, and `rejected` review statuses.
+- Optionally writes a machine-readable structured JSON pre-read from the same generated document as the markdown output.
 
-### Supported Inputs
+## Supported source modes
 
-The MVP supports local sample inputs only:
+- `sample`: reads local sample Jira issue JSON plus local sample GitHub PR JSON, prior standup markdown, and optional chat JSON.
+- `jira_mcp_sample`: reads a checked-in local mock Jira MCP-style response JSON instead of the direct Jira issue sample, while still using local sample GitHub PR JSON, prior standup markdown, and optional chat JSON.
 
-- Sample issue JSON, defaulting to `examples/jira-sample.json`.
-- Sample pull request JSON, defaulting to `examples/github-pr-sample.json`.
-- Prior standup markdown, defaulting to `examples/prior-standup.md`.
-- Optional sample Slack/Teams-style chat JSON via `--chat-path`, such as `examples/chat-rich-sample.json`.
+Both modes are local-only and do not call live services.
 
-The only supported source mode is `sample`.
+## Supported sample inputs
 
-### Supported Outputs
+- Jira sample JSON: `examples/jira-sample.json` and the richer `examples/jira-rich-sample.json` fixture.
+- GitHub PR sample JSON: `examples/github-pr-sample.json` and the richer `examples/github-pr-rich-sample.json` fixture.
+- Prior standup markdown: `examples/prior-standup.md` and the richer `examples/prior-standup-rich.md` fixture.
+- Chat sample JSON: `examples/chat-rich-sample.json` for local Slack/Teams-style sample messages.
+- Jira MCP-style sample response JSON: `examples/jira-mcp-sample-response.json` for mock MCP adapter validation.
 
-- Markdown standup pre-read drafts, defaulting to `output/standup-pre-read.md`.
-- Optional structured JSON output via `--json-output-path`.
-- Optional approved markdown copy via `--approved-output-path` when `--review-status approved` is set.
+## Supported outputs
 
-### Facilitator Review Workflow
+- Markdown pre-read, written with `--output-path` and defaulting to `output/standup-pre-read.md`.
+- Structured JSON pre-read, written when `--json-output-path` is provided.
 
-Generated pre-reads start as local facilitator-review drafts. A facilitator can:
+The JSON output is generated from the same structured pre-read document as the markdown output, so enabling JSON does not change the markdown draft.
 
-1. Generate a draft markdown pre-read and optional JSON output.
-2. Review the generated sections and source references locally.
-3. Re-run the CLI with `--review-status approved` or `--review-status rejected`.
-4. Include `--reviewer` and `--review-notes` to record local review context.
-5. Provide `--approved-output-path` to write a separate approved markdown copy only for approved pre-reads.
+## Priority scoring
 
-Rejected pre-reads keep review metadata in normal markdown and JSON outputs but do not write an approved copy.
+The MVP uses deterministic priority scoring to order higher-signal items before routine updates. Blockers, decisions, carryover, failing CI, requested changes, stale or idle pull requests, risk signals, and unclear ownership/status increase priority. Generated questions and structured JSON items carry priority values when available so facilitators can see which topics should be reviewed first.
 
-### Intentionally Out of Scope
+## Facilitator review workflow
 
-This MVP intentionally does not include:
+1. Generate a local markdown draft and, optionally, structured JSON output.
+2. Review the source-backed summary, agenda, questions, and references.
+3. Re-run the CLI with `--review-status approved` or `--review-status rejected` if a local review decision should be stamped into the outputs.
+4. Optionally include `--reviewer` and `--review-notes` for local review context.
+5. Optionally include `--approved-output-path` to write a separate approved markdown copy only when `--review-status approved` is used.
 
-- Live Jira API or Jira MCP integrations.
-- Live GitHub API integrations.
-- Slack, Teams, email, or notification delivery.
-- Backstage, Harness, EKS, or cloud deployment automation.
-- Authentication, authorization, or secret management for external systems.
-- Persistent storage beyond local markdown and JSON files.
-- Work-specific project names, URLs, keys, repositories, or team data.
+Rejected drafts keep review metadata in the normal markdown and JSON outputs but do not write an approved copy.
 
-### Run the Standard Demo
+## Demo commands
+
+Standard demo using `make demo`:
 
 ```bash
 make demo
 ```
 
-Equivalent direct command:
-
-```bash
-PYTHONPATH=src python3 -m standup_pre_read.cli \
-  --source-mode sample \
-  --output-path output/standup-pre-read.md
-```
-
-### Run the Rich Chat Demo
+Rich chat demo with markdown and JSON output:
 
 ```bash
 PYTHONPATH=src python3 -m standup_pre_read.cli \
@@ -82,23 +70,51 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --json-output-path output/rich-standup-pre-read.json
 ```
 
-### Run the Approved Review Demo
+Mock Jira MCP demo with markdown and JSON output:
 
 ```bash
 PYTHONPATH=src python3 -m standup_pre_read.cli \
-  --source-mode sample \
-  --output-path output/reviewed-pre-read.md \
-  --json-output-path output/reviewed-pre-read.json \
-  --review-status approved \
-  --reviewer "Facilitator" \
-  --review-notes "Ready to share." \
-  --approved-output-path output/approved-pre-read.md
+  --source-mode jira_mcp_sample \
+  --jira-mcp-path examples/jira-mcp-sample-response.json \
+  --output-path output/jira-mcp-standup-pre-read.md \
+  --json-output-path output/jira-mcp-standup-pre-read.json
 ```
 
-### Run Quality Checks
+## Quality checks
+
+Run individual checks:
+
+```bash
+make test
+make lint
+make typecheck
+```
+
+Run the full check target:
 
 ```bash
 make check
 ```
 
-`make check` runs the unit test suite, Ruff linting, and mypy type checking.
+`make check` runs tests, linting, and type checking.
+
+## What is intentionally out of scope
+
+- Live Jira integration.
+- Real Jira MCP integration.
+- GitHub API integration.
+- Live Slack or Teams integration.
+- Backstage integration.
+- EKS, deployment automation, or cloud runtime configuration.
+- Authentication, authorization, and secret management for external systems.
+- Persistent storage beyond local generated markdown and JSON files.
+- Work-specific names, URLs, project keys, channel names, team names, or proprietary data.
+
+## Suggested next milestones
+
+- Expand generic sample data to cover more edge cases and multi-repository scenarios.
+- Add schema versioning for structured JSON output after the local shape is validated.
+- Refine facilitator review metadata while preserving the local-only review workflow.
+- Add a real Jira MCP connector only after sample-mode quality is proven and an approved work environment exists.
+- Add a future GitHub API connector while preserving sample fixtures for tests and demos.
+- Evaluate live chat and notification integrations only after data access, privacy, and review workflows are agreed.
