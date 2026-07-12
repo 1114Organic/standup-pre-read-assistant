@@ -80,6 +80,10 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --json-output-path output/jira-mcp-standup-pre-read.json
 ```
 
+## v0.2.0 sample evaluation workflow
+
+`make evaluate` runs a local-only sample evaluation harness across four scenarios: default sample, rich sample, rich chat sample, and local `jira_mcp_sample`. Each scenario writes both markdown and JSON pre-read outputs under `output/evaluation/`. The harness validates required sections, expected blockers, decisions, carryover, resolved carryover exclusion, source references, JSON priorities, and JSON `review_status`, then writes `output/evaluation-report.md` and `output/evaluation-report.json`. The workflow uses only checked-in generic sample data and does not introduce live Jira, real Jira MCP, GitHub API, Slack/Teams, deployment, credentials, or work-specific data.
+
 ## Quality checks
 
 Run individual checks:
@@ -88,6 +92,7 @@ Run individual checks:
 make test
 make lint
 make typecheck
+make evaluate
 ```
 
 Run the full check target:

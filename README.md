@@ -19,7 +19,7 @@ Live APIs, Teams notifications, Harness, and EKS deployment are intentionally de
 
 ## v0.1.0 MVP Demo
 
-The v0.1.0 MVP is a local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.1.0 summary.
+The v0.2.0 evaluation workflow adds `make evaluate`, which runs all four local sample scenarios and writes `output/evaluation-report.md` plus `output/evaluation-report.json`. The v0.1.0 MVP is a local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.1.0 summary.
 
 Run the standard demo:
 
@@ -130,12 +130,13 @@ make test       # runs python3 -m pytest by default
 make lint       # runs python3 -m ruff check . by default
 make typecheck  # runs python3 -m mypy by default
 make demo       # runs the sample CLI and writes output/standup-pre-read.md
+make evaluate   # runs all four sample evaluation scenarios and writes output/evaluation-report.md/json
 make check      # runs test, lint, and typecheck
 ```
 
 ## Quality Checks
 
-Before opening a pull request, run the same local checks used by contributors:
+Before opening a pull request, run the same local checks used by contributors. For v0.2.0 sample-quality review, also run `make evaluate`; it covers the default sample, rich sample, rich chat sample, and local `jira_mcp_sample` scenario, verifies markdown and JSON outputs, required sections, blockers, decisions, carryover behavior, source references, JSON priorities, and JSON `review_status`.
 
 ```bash
 make check

@@ -1,0 +1,39 @@
+{
+  "evaluation_scope": "v0.2.0 sample evaluation harness",
+  "passed": true,
+  "scenario_count": 4,
+  "scenarios": [
+    {
+      "description": "Default sample Jira, GitHub, and prior standup data.",
+      "failures": [],
+      "json_output_path": "output/evaluation/default-sample.json",
+      "markdown_output_path": "output/evaluation/default-sample.md",
+      "name": "default_sample",
+      "passed": true
+    },
+    {
+      "description": "Richer generic sample data without chat messages.",
+      "failures": [],
+      "json_output_path": "output/evaluation/rich-sample.json",
+      "markdown_output_path": "output/evaluation/rich-sample.md",
+      "name": "rich_sample",
+      "passed": true
+    },
+    {
+      "description": "Richer generic sample data with local sample chat signals.",
+      "failures": [],
+      "json_output_path": "output/evaluation/rich-chat-sample.json",
+      "markdown_output_path": "output/evaluation/rich-chat-sample.md",
+      "name": "rich_chat_sample",
+      "passed": true
+    },
+    {
+      "description": "Local mock Jira MCP-style sample response with sample GitHub and prior standup data.",
+      "failures": [],
+      "json_output_path": "output/evaluation/jira-mcp-sample.json",
+      "markdown_output_path": "output/evaluation/jira-mcp-sample.md",
+      "name": "jira_mcp_sample",
+      "passed": true
+    }
+  ]
+}
