@@ -1,5 +1,77 @@
 # Release Notes
 
+## Release: v0.2.0 Evaluation Harness
+
+This release checkpoint documents v0.2.0 as the local evaluation and validation release for the standup pre-read assistant. It keeps the application behavior unchanged and focuses on repeatable quality checks against checked-in generic sample data.
+
+## What changed
+
+- Added a local-only evaluation harness that runs representative pre-read generation scenarios without calling external services.
+- Generates scenario-specific markdown and JSON pre-read outputs under `output/evaluation/` for facilitator review.
+- Writes consolidated evaluation reports at `output/evaluation-report.md` and `output/evaluation-report.json`.
+- Documents `make evaluate` as the repeatable validation command alongside the existing `make check` quality gate.
+
+## Evaluation scenarios covered
+
+The v0.2.0 harness covers these local sample scenarios:
+
+- `default_sample`: default local issue, pull request, and prior-standup fixtures.
+- `rich_sample`: richer local issue, pull request, and prior-standup fixtures without chat input.
+- `rich_chat_sample`: richer local fixtures plus local sample Slack/Teams-style chat messages.
+- `jira_mcp_sample`: checked-in local mock Jira MCP-style response fixture adapted into the existing sample flow.
+
+All scenarios use generic repository fixtures only. They do not introduce live Jira, real Jira MCP, GitHub API, live Slack or Teams, deployment, credentials, or work-specific data.
+
+## What the harness validates
+
+The evaluation harness validates that generated outputs include the expected MVP shape and quality signals, including:
+
+- Required markdown sections for the standup pre-read.
+- Expected blockers, decisions, carryover, and resolved-carryover exclusion behavior.
+- Source references for generated summary content.
+- Structured JSON output shape and priority fields.
+- JSON `review_status` metadata for facilitator-review draft behavior.
+
+## How to run the evaluation
+
+Run the v0.2.0 evaluation harness with:
+
+```bash
+make evaluate
+```
+
+The harness writes consolidated reports to:
+
+- `output/evaluation-report.md`
+- `output/evaluation-report.json`
+
+## Quality checks
+
+Run the full local quality gate with:
+
+```bash
+make check
+```
+
+`make check` runs tests, linting, and static type checking. For a release checkpoint, run both:
+
+```bash
+make check
+make evaluate
+```
+
+## What remains out of scope
+
+- Live Jira integration.
+- Real Jira MCP integration.
+- GitHub API integration.
+- Live Slack or Teams integration.
+- Backstage integration.
+- EKS, deployment automation, or cloud runtime configuration.
+- Authentication, authorization, and secret management for external systems.
+- Persistent storage beyond local generated markdown and JSON files.
+- Work-specific names, URLs, project keys, channel names, team names, or proprietary data.
+
 ## Release: v0.1.0 Local MVP
 
 This release checkpoint documents the current local MVP as a stable demo baseline before adding live integrations. It is intentionally documentation-focused and preserves the current application behavior.

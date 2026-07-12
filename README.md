@@ -17,9 +17,9 @@ The first build target is a thin-slice MVP:
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
 
 
-## v0.1.0 MVP Demo
+## v0.2.0 Evaluation Harness and v0.1.0 MVP Demo
 
-The v0.2.0 evaluation workflow adds `make evaluate`, which runs all four local sample scenarios and writes `output/evaluation-report.md` plus `output/evaluation-report.json`. The v0.1.0 MVP is a local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.1.0 summary.
+The v0.2.0 evaluation workflow is the current release checkpoint. It adds `make evaluate`, which runs `default_sample`, `rich_sample`, `rich_chat_sample`, and `jira_mcp_sample`, then writes `output/evaluation-report.md` plus `output/evaluation-report.json`. The v0.1.0 MVP remains the local sample-mode demo baseline. It generates markdown and optional JSON standup pre-reads from repository sample issue, pull request, prior standup, and optional chat files; generated output starts as a facilitator-review draft and can be locally approved or rejected. Live Jira, Jira MCP, GitHub API, Slack, Teams, Backstage, EKS, and work-specific data are intentionally out of scope for this checkpoint. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full v0.2.0 and v0.1.0 summaries.
 
 Run the standard demo:
 
