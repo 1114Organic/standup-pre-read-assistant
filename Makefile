@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: test lint typecheck demo check
+.PHONY: test lint typecheck demo evaluate check
 
 test:
 	$(PYTHON) -m pytest
@@ -13,5 +13,8 @@ typecheck:
 
 demo:
 	PYTHONPATH=src $(PYTHON) -m standup_pre_read.cli --source-mode sample --output-path output/standup-pre-read.md
+
+evaluate:
+	PYTHONPATH=src $(PYTHON) -m standup_pre_read.evaluation
 
 check: test lint typecheck

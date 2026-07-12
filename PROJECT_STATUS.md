@@ -13,6 +13,7 @@ The current MVP generates a local markdown standup pre-read from sample input fi
 - Marks generated pre-reads as `draft` by default, with local-only `approved` and `rejected` review statuses available through CLI options.
 - Writes the generated markdown draft to a local output path, defaulting to `output/standup-pre-read.md`.
 - Fails fast with a clear CLI error when an unsupported source mode is requested.
+- Provides a v0.2.0 sample evaluation harness through `make evaluate`, covering default sample, rich sample, rich chat sample, and local `jira_mcp_sample` scenarios with markdown and JSON outputs.
 
 The MVP is designed as a thin slice that proves the pre-read generation flow before adding live integrations.
 
@@ -136,6 +137,7 @@ make test
 make lint
 make typecheck
 make check
+make evaluate
 ```
 
 `make check` runs the full local verification set:
@@ -144,7 +146,7 @@ make check
 - Linting with `ruff`.
 - Static type checking with `mypy`.
 
-The test suite verifies default draft review status, approved and rejected review metadata, approved-output write behavior, generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, chat sample loading and generation, and clean failure for unsupported source modes.
+The evaluation harness writes `output/evaluation-report.md` and `output/evaluation-report.json` and validates required sections, blockers, decisions, carryover, resolved carryover exclusion, source references, JSON priority fields, and JSON `review_status`. The test suite verifies scenario definitions, validation checks, report writing, default draft review status, approved and rejected review metadata, approved-output write behavior, generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, chat sample loading and generation, and clean failure for unsupported source modes.
 
 ## 6. Suggested Next Milestones
 
