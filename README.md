@@ -16,6 +16,11 @@ The first build target is a thin-slice MVP:
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
 
+## v0.3.0 Draft: Local GitHub PR Intelligence
+
+The v0.3.0 draft expands local/sample pull request intelligence without adding live GitHub API integration. The generic GitHub fixtures now cover review requested, changes requested, approved, merged, failing CI, stale open PRs, blocked PRs, PRs with no linked issue, unclear owner, and decision-dependent PRs. Normalization preserves PR metadata such as review state, CI state, merge state, reviewers, approvals, requested changes, draft status, owner/author, linked issues, timestamps, and source references.
+
+Generated pre-reads now place merged PRs in progress, failing CI/stale/blocked PRs in risks, decision-dependent PRs in decisions/questions, waiting-on-review PRs in the suggested agenda/questions, and missing linked issue PRs in questions. JSON output includes useful `pr_metadata` on PR-derived items so downstream evaluators can inspect the same signals. The evaluation harness validates these local PR signals while preserving sample, `jira_mcp_sample`, rich sample, chat sample, markdown, JSON, priority scoring, facilitator review, and CI-compatible workflows.
 
 ## v0.2.0 Evaluation Harness and v0.1.0 MVP Demo
 

@@ -46,7 +46,11 @@ def normalize_github(data: dict[str, Any]) -> list[Activity]:
     for repo in data.get("repositories", []):
         repo_name = repo.get("name")
         for pr in repo.get("pull_requests", []):
-            risk = "CI failing" if pr.get("ci_state") == "failing" else None
+            risk_signals = []
+            if pr.get("ci_state") == "failing":
+                risk_signals.append("CI failing")
+            if pr.get("merge_state") == "blocked":
+                risk_signals.append("merge blocked")
             status = "merged" if pr.get("merged") else pr.get("state", "unknown")
             activities.append(
                 Activity(
@@ -63,12 +67,20 @@ def normalize_github(data: dict[str, Any]) -> list[Activity]:
                     timestamp=parse_datetime(pr.get("created")),
                     related_work_items=tuple(pr.get("linked_issues", [])),
                     blocker_signal=None,
-                    decision_signal=None,
-                    risk_signal=risk,
+                    decision_signal=pr.get("decision_needed") or (
+                        pr.get("summary") if pr.get("merge_state") == "waiting_on_decision" else None
+                    ),
+                    risk_signal=", ".join(risk_signals) if risk_signals else None,
                     confidence="high",
                     updated_timestamp=parse_datetime(pr.get("updated")),
                     ci_state=pr.get("ci_state"),
                     review_state=pr.get("review_state"),
+                    merge_state=pr.get("merge_state"),
+                    stale_days=pr.get("stale_days") or pr.get("age_days"),
+                    reviewers=tuple(pr.get("reviewers", [])),
+                    approvals=tuple(pr.get("approvals", [])),
+                    requested_changes=tuple(pr.get("requested_changes", [])),
+                    draft=pr.get("draft"),
                 )
             )
     return activities

@@ -1,5 +1,24 @@
 # Release Notes
 
+
+## Release: v0.3.0 Draft GitHub PR Intelligence
+
+This unreleased draft improves local/sample pull request intelligence before any live GitHub API work. It remains generic and local-only.
+
+## What changed
+
+- Expanded the checked-in GitHub PR fixtures to cover review requested, changes requested, approved, merged, failing CI, stale open PRs, blocked PRs, PRs with no linked issue, unclear owner, and PRs waiting on decisions.
+- Extended normalization to preserve PR metadata including review state, CI state, merge state, linked issues, reviewers, approvals, requested changes, draft status, owner/author, timestamps, and source references.
+- Updated generation so merged PRs appear as progress; failing CI, stale, blocked, and changes-requested PRs appear as risks; waiting-review PRs feed agenda/questions; missing linked issues become questions; and decision-dependent PRs appear in decisions/questions.
+- Added PR metadata to structured JSON items where useful and tuned deterministic priority scoring so PR risks rank with other high-signal standup topics.
+- Updated the evaluation harness and tests to validate local PR intelligence coverage while preserving sample, `jira_mcp_sample`, rich sample, chat sample, markdown, JSON, facilitator review, and CI-compatible behavior.
+
+## What remains out of scope
+
+- Live GitHub API integration.
+- Real Jira MCP or live Jira integration.
+- Live Slack, Teams, deployment, credentials, work-specific project keys, URLs, channel names, or team names.
+
 ## Release: v0.2.0 Evaluation Harness
 
 This release checkpoint documents v0.2.0 as the local evaluation and validation release for the standup pre-read assistant. It keeps the application behavior unchanged and focuses on repeatable quality checks against checked-in generic sample data.

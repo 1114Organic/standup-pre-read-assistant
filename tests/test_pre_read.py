@@ -215,6 +215,14 @@ def test_normalized_activity_model_preserves_jira_github_and_prior_signals() -> 
     assert failing_pr.ci_state == "failing"
     assert failing_pr.review_state == "review_required"
     assert failing_pr.updated_timestamp is not None
+    unowned_pr = next(activity for activity in github if activity.source_id == "PR #504")
+    decision_pr = next(activity for activity in github if activity.source_id == "PR #505")
+    assert unowned_pr.owner is None
+    assert unowned_pr.reviewers == ("reviewer-a",)
+    assert unowned_pr.related_work_items == ()
+    assert unowned_pr.merge_state == "clean"
+    assert decision_pr.merge_state == "waiting_on_decision"
+    assert decision_pr.decision_signal == "Decide which search rollout guardrail is required before merge."
     assert any(activity.source_id == "DEMO-103" and activity.activity_type == "prior_carryover" for activity in prior)
     assert all("Confirm documentation acceptance criteria" not in activity.title for activity in prior)
 
@@ -230,6 +238,10 @@ def test_generated_pre_read_includes_data_driven_items_and_sources() -> None:
     assert "Decide whether search relevance tuning is global or workspace-only. (DEMO-104)" in markdown
     assert f"{failing_pr.source_id} is open for 6 days since June 10, has failing CI linked to DEMO-104" in markdown
     assert "Follow up with IAM approver for DEMO-103" in markdown
+    assert "PR #503 merged after approval" in markdown
+    assert "PR #504" in markdown
+    assert "Should PR #504 be linked to an issue" in markdown
+    assert "Decide which search rollout guardrail is required before merge. (PR #505)." in markdown
     assert "Confirm documentation acceptance criteria for DEMO-101" not in markdown
     assert "https://jira.example.local/browse/DEMO-104" in markdown
     assert failing_pr.source_url is not None
@@ -505,6 +517,9 @@ def test_rich_sample_scenario_generates_expected_demo_signals(tmp_path: Path) ->
     assert "PR #1202 is open for" in markdown
     assert "has failing CI" in markdown
     assert "no updates for" in markdown
+    assert "PR #1204 is open for" in markdown
+    assert "blocked from merging" in markdown
+    assert "PR #1204 is has failing CI" not in markdown
     assert "Follow up on SAMPLE-212 credential approval" in markdown
     assert "Confirm SAMPLE-214 owner and current status" in markdown
     assert "Verify SAMPLE-210 checklist acceptance" not in markdown
@@ -723,6 +738,13 @@ def test_rich_sample_scenario_writes_json_output(tmp_path: Path) -> None:
     assert any("SAMPLE-212" in item["source_refs"] for item in payload["blockers"])
     assert any("PR #1202" in item["source_refs"] for item in payload["risks"])
     assert any(item.get("related_work_items") for item in payload["risks"])
+    assert any(
+        metadata.get("ci_state") == "failing"
+        for item in payload["risks"]
+        for metadata in item.get("pr_metadata", [])
+    )
+    assert any("PR #1205" in item["source_refs"] for item in payload["suggested_questions"])
+    assert any("PR #1206" in item["source_refs"] for item in payload["decisions"])
     assert payload["source_references"]
 
 

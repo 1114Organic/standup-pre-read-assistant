@@ -2,6 +2,12 @@
 
 This document summarizes the current generic MVP state for the Standup Pre-Read Assistant and the likely next milestones. It intentionally avoids work-specific names, URLs, project keys, and team names.
 
+## v0.3.0 Draft Status: Local GitHub PR Intelligence
+
+The current draft milestone improves sample-only GitHub PR understanding while keeping live integrations out of scope. Local PR fixtures include richer states for review requested, changes requested, approved, merged, failing CI, stale open PRs, blocked merge state, missing linked issue, unclear owner, and decision-dependent PRs. Normalized PR activities preserve review, CI, merge, reviewer, approval, requested-change, draft, author/owner, linked-issue, timestamp, and source-reference metadata.
+
+The generator uses those signals to route merged PRs to progress, CI/stale/blocked/changes-requested PRs to risks, decision-dependent PRs to decisions and questions, waiting-review PRs to agenda/questions, and no-linked-issue PRs to questions. Structured JSON includes PR metadata on PR-derived items, and the evaluation harness now checks for PR intelligence coverage in addition to the existing sample quality gates.
+
 ## 1. What the App Does Today
 
 The current MVP generates a local markdown standup pre-read from sample input files. In sample mode, it:

@@ -13,7 +13,9 @@
           "updated": "2026-06-15T15:50:00-04:00",
           "merged": false,
           "url": "https://github.com/example/example-platform-service/pull/501",
-          "linked_issues": ["DEMO-102"],
+          "linked_issues": [
+            "DEMO-102"
+          ],
           "ci_state": "passing",
           "summary": "PR is open with passing checks. Reviewer requested small changes to event naming."
         },
@@ -27,7 +29,9 @@
           "updated": "2026-06-15T13:40:00-04:00",
           "merged": false,
           "url": "https://github.com/example/example-platform-service/pull/502",
-          "linked_issues": ["DEMO-104"],
+          "linked_issues": [
+            "DEMO-104"
+          ],
           "ci_state": "failing",
           "summary": "PR remains open and CI is failing on search ranking tests."
         },
@@ -41,12 +45,58 @@
           "updated": "2026-06-15T11:20:00-04:00",
           "merged": true,
           "url": "https://github.com/example/example-platform-service/pull/503",
-          "linked_issues": ["DEMO-101"],
+          "linked_issues": [
+            "DEMO-101"
+          ],
           "ci_state": "passing",
           "summary": "PR merged successfully."
+        },
+        {
+          "number": 504,
+          "title": "Clarify settings copy",
+          "author": null,
+          "state": "open",
+          "review_state": "review_requested",
+          "created": "2026-06-15T10:00:00-04:00",
+          "updated": "2026-06-15T12:00:00-04:00",
+          "merged": false,
+          "url": "https://github.com/example/example-platform-service/pull/504",
+          "linked_issues": [],
+          "ci_state": "passing",
+          "merge_state": "clean",
+          "draft": false,
+          "reviewers": [
+            "reviewer-a"
+          ],
+          "approvals": [],
+          "requested_changes": [],
+          "summary": "PR is waiting on review and has no linked issue or clear owner."
+        },
+        {
+          "number": 505,
+          "title": "Pick search rollout guardrail",
+          "author": "c-engineer",
+          "state": "open",
+          "review_state": "review_required",
+          "created": "2026-06-15T10:30:00-04:00",
+          "updated": "2026-06-15T11:30:00-04:00",
+          "merged": false,
+          "url": "https://github.com/example/example-platform-service/pull/505",
+          "linked_issues": [
+            "DEMO-104"
+          ],
+          "ci_state": "passing",
+          "merge_state": "waiting_on_decision",
+          "draft": false,
+          "reviewers": [
+            "reviewer-b"
+          ],
+          "approvals": [],
+          "requested_changes": [],
+          "decision_needed": "Decide which search rollout guardrail is required before merge.",
+          "summary": "PR is waiting on a decision before merge."
         }
       ]
     }
   ]
 }
-
