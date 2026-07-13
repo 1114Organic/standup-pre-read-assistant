@@ -131,6 +131,26 @@ def validate_scenario(scenario: EvaluationScenario, markdown: str, payload: dict
     _check(bool(payload.get("source_references")), "JSON source references are empty", failures)
     _check(all("priority" in item for item in all_items), "one or more JSON items are missing priority", failures)
     _check(payload.get("review_status") == "draft", "JSON review_status is not draft", failures)
+    pr_metadata_items = [
+        metadata
+        for key in ("progress", "risks", "decisions", "suggested_questions")
+        for item in payload.get(key, [])
+        for metadata in item.get("pr_metadata", [])
+    ]
+    _check(bool(pr_metadata_items), "PR metadata was not present in JSON PR signals", failures)
+    _check(
+        any(metadata.get("ci_state") == "failing" for metadata in pr_metadata_items),
+        "failing CI PR metadata was not present in JSON PR signals",
+        failures,
+    )
+    _check(
+        any(
+            "linked to an issue" in item.get("text", "").lower()
+            for item in payload.get("suggested_questions", [])
+        ),
+        "missing linked issue PR question was not present",
+        failures,
+    )
     return failures
 
 
@@ -155,7 +175,7 @@ def run_evaluation(
             }
         )
     report = {
-        "evaluation_scope": "v0.2.0 sample evaluation harness",
+        "evaluation_scope": "v0.3.0 local GitHub PR intelligence evaluation harness",
         "passed": all(result["passed"] for result in results),
         "scenario_count": len(results),
         "scenarios": results,

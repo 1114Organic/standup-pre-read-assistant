@@ -44,6 +44,10 @@ class GeneratedBullet:
             item["related_work_items"] = list(self.related_work_items)
         if self.priority is not None:
             item["priority"] = self.priority
+        pr_metadata = [_pr_metadata(source) for source in self.sources if source.activity_type == "github_pr"]
+        pr_metadata = [metadata for metadata in pr_metadata if metadata]
+        if pr_metadata:
+            item["pr_metadata"] = pr_metadata
         return item
 
 
@@ -112,6 +116,7 @@ def _activity_priority(activity: Activity, today: date | None = None, stale_pr_d
             activity.risk_signal or "",
             activity.ci_state or "",
             activity.review_state or "",
+            activity.merge_state or "",
         )
         if part
     ).lower()
@@ -140,9 +145,13 @@ def _activity_priority(activity: Activity, today: date | None = None, stale_pr_d
     if activity.ci_state == "failing" or "failing ci" in signal_text:
         score += 80
     if activity.review_state == "changes_requested":
-        score += 50
-    elif activity.review_state == "review_required":
+        score += 70
+    elif activity.review_state in {"review_required", "review_requested"}:
         score += 25
+    if activity.merge_state == "blocked":
+        score += 65
+    elif activity.merge_state == "waiting_on_decision":
+        score += 55
     if activity.risk_signal:
         score += 45
     if activity.activity_type == "github_pr" and status == "open":
@@ -155,7 +164,7 @@ def _activity_priority(activity: Activity, today: date | None = None, stale_pr_d
             if idle_days >= stale_pr_days:
                 score += 35 + min(idle_days, 30)
         if not activity.related_work_items:
-            score += 15
+            score += 35
     if not activity.owner or not activity.status or status == "unknown":
         score += 35
     if _is_done(activity.status):
@@ -227,7 +236,34 @@ def _is_review(status: str) -> bool:
 
 def _needs_review(pr: Activity) -> bool:
     review_state = (pr.review_state or "").lower()
-    return pr.status.lower() == "open" and review_state in {"review_required", "changes_requested"}
+    return pr.status.lower() == "open" and review_state in {"review_required", "review_requested", "changes_requested"}
+
+
+def _pr_metadata(pr: Activity) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+    for key, value in (
+        ("review_state", pr.review_state),
+        ("ci_state", pr.ci_state),
+        ("merge_state", pr.merge_state),
+        ("stale_days", pr.stale_days),
+        ("draft", pr.draft),
+        ("owner", pr.owner),
+    ):
+        if value is not None:
+            metadata[key] = value
+    if pr.timestamp:
+        metadata["created_at"] = pr.timestamp.isoformat()
+    if pr.updated_timestamp:
+        metadata["updated_at"] = pr.updated_timestamp.isoformat()
+    if pr.related_work_items:
+        metadata["linked_issues"] = list(pr.related_work_items)
+    if pr.reviewers:
+        metadata["reviewers"] = list(pr.reviewers)
+    if pr.approvals:
+        metadata["approvals"] = list(pr.approvals)
+    if pr.requested_changes:
+        metadata["requested_changes"] = list(pr.requested_changes)
+    return metadata
 
 
 def _format_date(value: datetime | None) -> str:
@@ -255,16 +291,26 @@ def _pr_risk(pr: Activity, today: date, stale_pr_days: int) -> GeneratedBullet |
     reasons: list[str] = []
     if age_days is not None and age_days >= stale_pr_days:
         reasons.append(f"open for {age_days} days since {_format_date(pr.timestamp)}")
-    if pr.ci_state == "failing" or pr.risk_signal:
+    if pr.ci_state == "failing":
         reasons.append("has failing CI")
     if pr.review_state == "changes_requested":
         reasons.append("requested review changes")
+    if pr.merge_state == "blocked":
+        reasons.append("blocked from merging")
     if idle_days is not None and idle_days >= stale_pr_days:
         reasons.append(f"no updates for {idle_days} days")
     if not reasons:
         return None
     linked = f" linked to {', '.join(pr.related_work_items)}" if pr.related_work_items else " with no linked issue"
     return GeneratedBullet(f"{pr.source_id} is {', '.join(reasons)}{linked}.", (pr,))
+
+
+def _pr_progress(pr: Activity) -> GeneratedBullet | None:
+    if pr.status.lower() != "merged":
+        return None
+    linked = f" linked to {', '.join(pr.related_work_items)}" if pr.related_work_items else " with no linked issue"
+    approval = " after approval" if pr.review_state == "approved" or pr.approvals else ""
+    return GeneratedBullet(f"{pr.source_id} merged{approval}: {pr.title}{linked}.", (pr,))
 
 
 def _render_section(bullets: tuple[GeneratedBullet, ...], empty: str) -> list[str]:
@@ -315,6 +361,23 @@ def _standup_questions(
         questions.append(
             _question(f"What is the next step to reduce risk on {subject}: {risk.text}", risk.sources, risk.priority)
         )
+    for pr in _open_prs(activities):
+        if pr.review_state in {"review_required", "review_requested"}:
+            questions.append(
+                _question(
+                    f"Who can review {pr.source_id}: {pr.title}",
+                    (pr,),
+                    _activity_priority(pr, today, stale_pr_days),
+                )
+            )
+        if not pr.related_work_items:
+            questions.append(
+                _question(
+                    f"Should {pr.source_id} be linked to an issue before standup follow-up: {pr.title}",
+                    (pr,),
+                    _activity_priority(pr, today, stale_pr_days),
+                )
+            )
     for decision in decisions:
         source = decision.sources[0] if decision.sources else None
         subject = source.source_id if source else "this decision"
@@ -367,7 +430,7 @@ def _standup_questions(
             continue
         seen.add(key)
         deduped.append(question)
-    return _prioritize(tuple(deduped), today, stale_pr_days)[:9]
+    return _prioritize(tuple(deduped), today, stale_pr_days)[:20]
 
 
 def _references(activities: list[Activity]) -> tuple[dict[str, str], ...]:
@@ -414,7 +477,7 @@ def _agenda(
     items.extend(
         GeneratedBullet(f"Review risk: {r.text}", r.sources, r.priority)
         for r in risks
-        if "failing CI" in r.text or "open for" in r.text
+        if "failing CI" in r.text or "open for" in r.text or "blocked from merging" in r.text
     )
     review_prs = [pr for pr in _open_prs(activities) if _needs_review(pr)]
     items.extend(
@@ -460,11 +523,20 @@ def generate_pre_read_document(
         raise ValueError(f"Unsupported review_status {review_status!r}")
     issues = sorted(_activities(activities, "jira_issue"), key=lambda activity: activity.source_id)
     progress = _with_priorities(
-        tuple(
-            GeneratedBullet(text.strip().rstrip(".") + ".", sources)
-            for issue in issues
-            if _is_done(issue.status) or _is_review(issue.status) or issue.status.lower() in {"in progress", "blocked"}
-            for text, sources in [_issue_summary(issue, activities)]
+        (
+            *tuple(
+                GeneratedBullet(text.strip().rstrip(".") + ".", sources)
+                for issue in issues
+                if _is_done(issue.status)
+                or _is_review(issue.status)
+                or issue.status.lower() in {"in progress", "blocked"}
+                for text, sources in [_issue_summary(issue, activities)]
+            ),
+            *tuple(
+                bullet
+                for pr in sorted(_activities(activities, "github_pr"), key=lambda activity: activity.source_id)
+                if (bullet := _pr_progress(pr))
+            ),
         ),
         today,
         stale_pr_days,
@@ -493,7 +565,12 @@ def generate_pre_read_document(
         for activity in activities
         if activity.activity_type == "chat_decision"
     )
-    decisions = _prioritize((*issue_decisions, *chat_decisions), today, stale_pr_days)
+    pr_decisions = tuple(
+        GeneratedBullet(f"{pr.decision_signal} ({pr.source_id}).", (pr,))
+        for pr in _open_prs(activities)
+        if pr.decision_signal or pr.merge_state == "waiting_on_decision"
+    )
+    decisions = _prioritize((*issue_decisions, *chat_decisions, *pr_decisions), today, stale_pr_days)
     risks = _prioritize(
         tuple(
             risk

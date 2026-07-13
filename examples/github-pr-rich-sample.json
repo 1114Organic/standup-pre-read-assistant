@@ -13,7 +13,9 @@
           "updated": "2026-06-15T13:10:00+00:00",
           "merged": false,
           "url": "https://github.com/example/sample-service/pull/1201",
-          "linked_issues": ["SAMPLE-211"],
+          "linked_issues": [
+            "SAMPLE-211"
+          ],
           "ci_state": "passing",
           "summary": "Review requested a small response-shape change."
         },
@@ -27,7 +29,9 @@
           "updated": "2026-06-09T12:00:00+00:00",
           "merged": false,
           "url": "https://github.com/example/sample-service/pull/1202",
-          "linked_issues": ["SAMPLE-213"],
+          "linked_issues": [
+            "SAMPLE-213"
+          ],
           "ci_state": "failing",
           "summary": "Routing change is stale and failing integration tests."
         },
@@ -41,9 +45,81 @@
           "updated": "2026-06-15T10:25:00+00:00",
           "merged": true,
           "url": "https://github.com/example/sample-service/pull/1203",
-          "linked_issues": ["SAMPLE-210"],
+          "linked_issues": [
+            "SAMPLE-210"
+          ],
           "ci_state": "passing",
           "summary": "Documentation update merged after approval."
+        },
+        {
+          "number": 1204,
+          "title": "Refresh retry policy",
+          "author": "engineer-two",
+          "state": "open",
+          "review_state": "approved",
+          "created": "2026-06-15T09:30:00+00:00",
+          "updated": "2026-06-15T14:00:00+00:00",
+          "merged": false,
+          "url": "https://github.com/example/sample-service/pull/1204",
+          "linked_issues": [
+            "SAMPLE-214"
+          ],
+          "ci_state": "passing",
+          "merge_state": "blocked",
+          "draft": false,
+          "reviewers": [
+            "reviewer-one"
+          ],
+          "approvals": [
+            "reviewer-one"
+          ],
+          "requested_changes": [],
+          "summary": "Approved but merge is blocked by a pending dependency."
+        },
+        {
+          "number": 1205,
+          "title": "Clarify audit trail copy",
+          "author": "engineer-four",
+          "state": "open",
+          "review_state": "review_requested",
+          "created": "2026-06-15T10:00:00+00:00",
+          "updated": "2026-06-15T10:45:00+00:00",
+          "merged": false,
+          "url": "https://github.com/example/sample-service/pull/1205",
+          "linked_issues": [],
+          "ci_state": "passing",
+          "merge_state": "clean",
+          "draft": false,
+          "reviewers": [
+            "reviewer-two"
+          ],
+          "approvals": [],
+          "requested_changes": [],
+          "summary": "Open PR needs review and does not cite a work item."
+        },
+        {
+          "number": 1206,
+          "title": "Choose export retention default",
+          "author": "engineer-five",
+          "state": "open",
+          "review_state": "review_required",
+          "created": "2026-06-15T12:00:00+00:00",
+          "updated": "2026-06-15T12:30:00+00:00",
+          "merged": false,
+          "url": "https://github.com/example/sample-service/pull/1206",
+          "linked_issues": [
+            "SAMPLE-213"
+          ],
+          "ci_state": "passing",
+          "merge_state": "waiting_on_decision",
+          "draft": false,
+          "reviewers": [
+            "reviewer-three"
+          ],
+          "approvals": [],
+          "requested_changes": [],
+          "decision_needed": "Decide the default export retention period before merging.",
+          "summary": "Implementation is ready but waiting on a product decision."
         }
       ]
     }

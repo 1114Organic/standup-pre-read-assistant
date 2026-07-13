@@ -38,3 +38,9 @@ class Activity:
     updated_timestamp: datetime | None = None
     ci_state: str | None = None
     review_state: str | None = None
+    merge_state: str | None = None
+    stale_days: int | None = None
+    reviewers: tuple[str, ...] = field(default_factory=tuple)
+    approvals: tuple[str, ...] = field(default_factory=tuple)
+    requested_changes: tuple[str, ...] = field(default_factory=tuple)
+    draft: bool | None = None
