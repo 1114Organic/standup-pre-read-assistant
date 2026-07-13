@@ -33,7 +33,8 @@
             "SAMPLE-213"
           ],
           "ci_state": "failing",
-          "summary": "Routing change is stale and failing integration tests."
+          "summary": "Routing change is stale and failing integration tests.",
+          "stale_days": 8
         },
         {
           "number": 1203,
@@ -74,7 +75,8 @@
             "reviewer-one"
           ],
           "requested_changes": [],
-          "summary": "Approved but merge is blocked by a pending dependency."
+          "summary": "Approved but merge is blocked by a pending dependency.",
+          "blocked_reason": "Pending dependency approval in sample environment."
         },
         {
           "number": 1205,

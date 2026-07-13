@@ -34,6 +34,11 @@ The first working version shall:
 
 The first working version shall not call live Jira, GitHub, Teams, Slack, Harness, or observability APIs.
 
+
+## 4.1 v0.3.0 Local GitHub PR Intelligence Draft
+
+The v0.3.0 milestone keeps GitHub work local and sample-only while improving pull request signals before any live API connector is added. Sample PR data should cover review requested, changes requested, approved, merged, failing CI, stale open PRs, blocked PRs, missing linked issues, unclear ownership, and PRs waiting on decisions. Normalized PR activity should preserve review, CI, merge, age/staleness, linked issue, reviewer, approval, requested-change, draft, owner/author, and source-reference metadata when supplied by fixtures. Generated markdown and JSON should route merged PRs to progress; failing CI, stale, blocked, and changes-requested PRs to risks; missing linked issues and waiting reviews to questions or agenda; and decision-dependent PRs to decisions/questions.
+
 ## 5. Future Runtime Target
 
 Prototype: local dry run using sample data.
