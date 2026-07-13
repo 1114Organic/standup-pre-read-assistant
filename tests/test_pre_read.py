@@ -215,6 +215,11 @@ def test_normalized_activity_model_preserves_jira_github_and_prior_signals() -> 
     assert failing_pr.ci_state == "failing"
     assert failing_pr.review_state == "review_required"
     assert failing_pr.updated_timestamp is not None
+    rich_github = normalize_github(load_github_pr_sample(Path("examples/github-pr-rich-sample.json")))
+    stale_pr = next(activity for activity in rich_github if activity.source_id == "PR #1202")
+    blocked_pr = next(activity for activity in rich_github if activity.source_id == "PR #1204")
+    assert stale_pr.stale_days == 8
+    assert blocked_pr.risk_signal == "merge blocked, Pending dependency approval in sample environment."
     unowned_pr = next(activity for activity in github if activity.source_id == "PR #504")
     decision_pr = next(activity for activity in github if activity.source_id == "PR #505")
     assert unowned_pr.owner is None
@@ -567,6 +572,32 @@ def test_build_pre_read_writes_json_output_with_expected_sections_and_sources(tm
     assert payload["progress"]
     assert all("text" in item and "source_refs" in item for item in payload["progress"])
     assert any(item["source_refs"] for item in payload["blockers"] + payload["risks"] + payload["suggested_questions"])
+
+
+def test_pr_metadata_in_json_includes_staleness_and_review_signals(tmp_path: Path) -> None:
+    markdown_output_path = tmp_path / "rich-pre-read.md"
+    json_output_path = tmp_path / "rich-pre-read.json"
+
+    build_pre_read(
+        Config(
+            jira_path=Path("examples/jira-rich-sample.json"),
+            github_path=Path("examples/github-pr-rich-sample.json"),
+            prior_standup_path=Path("examples/prior-standup-rich.md"),
+            output_path=markdown_output_path,
+            json_output_path=json_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+    metadata_items = [
+        metadata
+        for section in ("progress", "risks", "decisions", "suggested_questions")
+        for item in payload[section]
+        for metadata in item.get("pr_metadata", [])
+    ]
+
+    assert any(metadata.get("stale_days") == 8 and metadata.get("age_days") == 8 for metadata in metadata_items)
+    assert any(metadata.get("review_state") == "changes_requested" for metadata in metadata_items)
+    assert any(metadata.get("merge_state") == "waiting_on_decision" for metadata in metadata_items)
 
 
 def test_generated_json_uses_same_structured_data_as_markdown() -> None:

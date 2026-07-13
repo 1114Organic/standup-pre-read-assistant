@@ -251,6 +251,8 @@ def _pr_metadata(pr: Activity) -> dict[str, Any]:
     ):
         if value is not None:
             metadata[key] = value
+    if pr.stale_days is not None:
+        metadata["age_days"] = pr.stale_days
     if pr.timestamp:
         metadata["created_at"] = pr.timestamp.isoformat()
     if pr.updated_timestamp:

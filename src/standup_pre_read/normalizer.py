@@ -51,6 +51,8 @@ def normalize_github(data: dict[str, Any]) -> list[Activity]:
                 risk_signals.append("CI failing")
             if pr.get("merge_state") == "blocked":
                 risk_signals.append("merge blocked")
+            if pr.get("blocked_reason"):
+                risk_signals.append(pr["blocked_reason"])
             status = "merged" if pr.get("merged") else pr.get("state", "unknown")
             activities.append(
                 Activity(
