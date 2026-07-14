@@ -20,6 +20,7 @@ from standup_pre_read.connectors import (
     JiraMcpConnector,
     JiraMcpRuntimeUnavailableError,
     JiraMcpSampleSourceConnector,
+    RequiredSourceUnavailableError,
     SampleSourceConnector,
     SourceData,
     source_connector_for,
@@ -45,6 +46,7 @@ REQUIRED_SECTIONS = [
     "## Carryover From Yesterday",
     "## Suggested Standup Agenda",
     "## Suggested Standup Questions",
+    "## Source Health",
     "## Source References",
 ]
 
@@ -283,6 +285,46 @@ def test_jira_mcp_sample_does_not_attempt_real_connection(monkeypatch: pytest.Mo
     )
 
     assert "MCP-101 is done" in markdown
+
+
+def test_optional_chat_failure_reports_source_health_without_crashing(tmp_path: Path) -> None:
+    output_path = tmp_path / "pre-read.md"
+    json_output_path = tmp_path / "pre-read.json"
+
+    markdown = build_pre_read(
+        Config(
+            chat_path=tmp_path / "missing-chat.json",
+            output_path=output_path,
+            json_output_path=json_output_path,
+        )
+    )
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+    chat_health = next(item for item in payload["source_health"] if item["name"] == "chat")
+
+    assert "## Source Health" in markdown
+    assert chat_health["status"] == "failed"
+    assert chat_health["required"] is False
+    assert output_path.exists()
+
+
+def test_required_source_failure_fails_clearly(tmp_path: Path) -> None:
+    with pytest.raises(RequiredSourceUnavailableError) as excinfo:
+        build_pre_read(Config(jira_path=tmp_path / "missing-jira.json", output_path=tmp_path / "pre-read.md"))
+
+    assert "Required source 'jira' failed" in str(excinfo.value)
+    assert not (tmp_path / "pre-read.md").exists()
+
+
+def test_disabled_chat_source_is_reported_as_skipped(tmp_path: Path) -> None:
+    json_output_path = tmp_path / "pre-read.json"
+
+    build_pre_read(Config(output_path=tmp_path / "pre-read.md", json_output_path=json_output_path))
+    payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+    chat_health = next(item for item in payload["source_health"] if item["name"] == "chat")
+
+    assert chat_health["status"] == "skipped"
+    assert chat_health["required"] is False
+
 
 def test_generated_pre_read_includes_required_sections() -> None:
     markdown = _sample_markdown()

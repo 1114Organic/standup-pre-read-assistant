@@ -22,6 +22,15 @@ A connector returns one `SourceData` object with these fields:
 | `github_data` | Yes | Dictionary with a `repositories` list | The list may be empty for connectors that do not provide PR data, but each repository must include `name` and `pull_requests`. |
 | `prior_markdown` | Yes | String | Prior standup notes may be empty, but must be a string. |
 | `chat_data` | Yes | Dictionary with a `channels` list | Use `{"channels": []}` when chat is not configured. |
+| `source_health` | Yes | List of source health records | Records include source name, `ok`/`failed`/`skipped` status, required flag, and a concise message. |
+
+## Required, Optional, and Disabled Sources
+
+Current local Jira, GitHub, and prior-standup sources are required for sample generation. If one of those required sources cannot be loaded, the run fails clearly with the source name and does not write a partial pre-read.
+
+Chat is optional. If optional chat is disabled, connectors return `{"channels": []}` and report the source as `skipped` in source health. If optional chat is configured but fails to load, the run continues with empty chat data and reports chat as `failed` in source health.
+
+Future live sources should follow the same pattern: required source failures stop the run with a concise connector error, optional source failures are isolated and visible in source health, and disabled sources are reported as `skipped` rather than silently disappearing.
 
 ## Required Fields
 
@@ -95,6 +104,8 @@ Future connectors may provide richer evidence, but confidence should reflect sou
 Connectors should fail fast with clear errors when required payload shape is missing or invalid. The shared `validate_source_data` helper checks the current lightweight contract and raises `ConnectorContractError` with field paths such as `jira_data.issues[0].key`.
 
 A connector should not silently drop malformed required records if that would hide source coverage problems. Optional fields can be omitted when unavailable.
+
+Required connector load failures should raise a clear source-specific error. Optional connector load failures should be captured in `source_health`, use a safe empty fallback payload, and allow the run to complete so facilitators can see which non-required source was unavailable.
 
 ## Security and No-Secrets Guidance
 

@@ -17,6 +17,7 @@ REQUIRED_MARKDOWN_SECTIONS = (
     "## Carryover From Yesterday",
     "## Suggested Standup Agenda",
     "## Suggested Standup Questions",
+    "## Source Health",
     "## Source References",
 )
 
@@ -129,6 +130,7 @@ def validate_scenario(scenario: EvaluationScenario, markdown: str, payload: dict
         failures,
     )
     _check(bool(payload.get("source_references")), "JSON source references are empty", failures)
+    _check(bool(payload.get("source_health")), "JSON source_health is empty", failures)
     _check(all("priority" in item for item in all_items), "one or more JSON items are missing priority", failures)
     _check(payload.get("review_status") == "draft", "JSON review_status is not draft", failures)
     pr_metadata_items = [
