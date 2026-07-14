@@ -1,4 +1,4 @@
-# macOS
+# macOS local metadata
 .DS_Store
 
 # Python bytecode/cache artifacts
@@ -12,7 +12,8 @@ __pycache__/
 *.egg-info/
 
 # Local demo/evaluation outputs; keep checked-in baseline reports visible.
-output/*
+output/**
+!output/
 !output/evaluation-report.json
 !output/evaluation-report.md
 !output/standup-pre-read.md
