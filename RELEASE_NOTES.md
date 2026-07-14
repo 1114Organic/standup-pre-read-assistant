@@ -1,5 +1,12 @@
 # Release Notes
 
+## Unreleased / v0.6.0 Draft: Real Jira MCP Connector Readiness
+
+- Added the `jira_mcp` source mode as the application-side boundary for a future approved real Jira MCP connector.
+- Added safe Jira MCP configuration fields for `sources.jira.enabled`, `mode`, `mcp_server_name`, `jql`, `project_keys`, `include_comments`, and `max_results` without adding credentials, tokens, real Jira URLs, or work-specific data.
+- Real `jira_mcp` execution now fails clearly in this local repository runtime unless an approved MCP runtime implementation is supplied; no credentials, network calls, or Jira requests are attempted.
+- Kept `jira_mcp_sample` as the deterministic local MCP-shaped test path and preserved sample/evaluation workflows.
+
 ## Unreleased / v0.5.0 Draft: Integration Config Foundation
 
 - Added `ROADMAP.md` to show the path from local MVP through one-team pilot and identify expected inputs, outputs, success criteria, and out-of-scope items for upcoming live integration milestones.

@@ -21,6 +21,12 @@ class Config:
     review_notes: str | None = None
     approved_output_path: Path | None = None
     stale_pr_days: int = 5
+    jira_enabled: bool = True
+    jira_mcp_server_name: str | None = None
+    jira_jql: str | None = None
+    jira_project_keys: tuple[str, ...] = ()
+    jira_include_comments: bool = False
+    jira_max_results: int = 50
 
 
 def _optional_path(value: Any) -> Path | None:
@@ -39,6 +45,30 @@ def _string_value(value: Any, field_name: str) -> str | None:
     if isinstance(value, str):
         return value
     raise ValueError(f"Expected {field_name} to be a string, got {type(value).__name__}.")
+
+
+def _bool_value(value: Any, field_name: str) -> bool | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    raise ValueError(f"Expected {field_name} to be a boolean, got {type(value).__name__}.")
+
+
+def _int_value(value: Any, field_name: str) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, int):
+        return value
+    raise ValueError(f"Expected {field_name} to be an integer, got {type(value).__name__}.")
+
+
+def _string_tuple(value: Any, field_name: str) -> tuple[str, ...] | None:
+    if value in (None, ""):
+        return None
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise ValueError(f"{field_name} must be a list of non-empty strings when provided.")
+    return tuple(value)
 
 
 def _review_status(value: Any) -> Literal["draft", "approved", "rejected"] | None:
@@ -134,12 +164,34 @@ def load_config_file(path: Path) -> Config:
     if team_name is not None:
         updates["team_name"] = team_name
 
+    jira_enabled = _bool_value(jira.get("enabled"), "sources.jira.enabled")
+    if jira_enabled is not None:
+        updates["jira_enabled"] = jira_enabled
+
     jira_mode = _string_value(jira.get("mode"), "sources.jira.mode")
     github_mode = _string_value(github.get("mode"), "sources.github.mode")
-    if jira_mode == "jira_mcp":
-        updates["source_mode"] = "jira_mcp_sample"
-    elif jira_mode == "sample" or github_mode == "sample":
+    if jira_mode is not None:
+        if jira_mode not in {"sample", "jira_mcp_sample", "jira_mcp"}:
+            raise ValueError("sources.jira.mode must be one of: sample, jira_mcp_sample, jira_mcp.")
+        updates["source_mode"] = jira_mode
+    elif github_mode == "sample":
         updates["source_mode"] = "sample"
+
+    jira_mcp_server_name = _string_value(jira.get("mcp_server_name"), "sources.jira.mcp_server_name")
+    if jira_mcp_server_name is not None:
+        updates["jira_mcp_server_name"] = jira_mcp_server_name
+    jira_jql = _string_value(jira.get("jql"), "sources.jira.jql")
+    if jira_jql is not None:
+        updates["jira_jql"] = jira_jql
+    jira_project_keys = _string_tuple(jira.get("project_keys"), "sources.jira.project_keys")
+    if jira_project_keys is not None:
+        updates["jira_project_keys"] = jira_project_keys
+    jira_include_comments = _bool_value(jira.get("include_comments"), "sources.jira.include_comments")
+    if jira_include_comments is not None:
+        updates["jira_include_comments"] = jira_include_comments
+    jira_max_results = _int_value(jira.get("max_results"), "sources.jira.max_results")
+    if jira_max_results is not None:
+        updates["jira_max_results"] = jira_max_results
 
     output_path = _optional_path(outputs.get("markdown_path"))
     if output_path is not None:

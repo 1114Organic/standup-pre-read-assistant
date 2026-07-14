@@ -26,6 +26,10 @@ class ConnectorContractError(ValueError):
     """Raised when a connector returns a payload that cannot be normalized safely."""
 
 
+class JiraMcpRuntimeUnavailableError(RuntimeError):
+    """Raised when real Jira MCP mode is selected without an approved runtime adapter."""
+
+
 class SourceConnector(Protocol):
     def load(self) -> SourceData:
         """Load source data without normalizing or generating output."""
@@ -59,6 +63,33 @@ class JiraMcpSampleSourceConnector:
         )
         validate_source_data(source_data)
         return source_data
+
+
+@dataclass(frozen=True)
+class JiraMcpConnector:
+    """Boundary for a future approved real Jira MCP client.
+
+    Contract: execute a read-only Jira search against ``config.jira_mcp_server_name``
+    using either ``config.jira_jql`` or ``config.jira_project_keys``, honor
+    ``config.jira_include_comments`` and ``config.jira_max_results``, adapt the
+    MCP tool result into the local Jira issue shape, and return a validated
+    ``SourceData`` with local GitHub/prior/chat inputs. Credentials must come
+    from the approved MCP runtime, never from repository code or config files.
+    """
+
+    config: Config
+
+    def load(self) -> SourceData:
+        if not self.config.jira_enabled:
+            raise JiraMcpRuntimeUnavailableError(
+                "jira_mcp source mode is disabled by config: sources.jira.enabled is false."
+            )
+        raise JiraMcpRuntimeUnavailableError(
+            "jira_mcp source mode requires an approved MCP runtime and configured "
+            "sources.jira.mcp_server_name. This repository provides only the safe "
+            "adapter boundary; use jira_mcp_sample for local tests. No credentials, "
+            "network calls, or Jira requests were attempted."
+        )
 
 
 def _is_non_empty_string(value: Any) -> bool:
@@ -179,5 +210,7 @@ def source_connector_for(config: Config) -> SourceConnector:
         return SampleSourceConnector(config)
     if config.source_mode == "jira_mcp_sample":
         return JiraMcpSampleSourceConnector(config)
-    supported = "sample, jira_mcp_sample"
+    if config.source_mode == "jira_mcp":
+        return JiraMcpConnector(config)
+    supported = "sample, jira_mcp_sample, jira_mcp"
     raise ValueError(f"Unsupported source_mode '{config.source_mode}'. Supported modes: {supported}.")

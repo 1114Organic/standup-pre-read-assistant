@@ -6,10 +6,11 @@ This project is still local-only. The connector contract defines the shape that 
 
 Source connectors collect raw activity from an approved source and return a `SourceData` payload. A connector should only load and adapt source data; it should not summarize, score priorities, decide standup sections, or write output files. Normalization and generation remain shared application responsibilities.
 
-Current connectors are local fixtures only:
+Current executable connectors are local fixtures only. A `jira_mcp` adapter boundary also exists, but it raises a runtime-unavailable error in this repository unless a future approved MCP runtime implementation is supplied:
 
 - `sample` reads checked-in Jira-style issue JSON, GitHub PR JSON, prior standup markdown, and optional chat JSON.
 - `jira_mcp_sample` reads a checked-in mock Jira MCP-style JSON response and adapts it to the same local Jira sample shape.
+- `jira_mcp` is the real Jira MCP mode name; in this repo it does not call MCP, Jira, the network, or credentials and fails with clear guidance to use an approved runtime.
 
 ## `SourceData` Expectations
 
@@ -105,13 +106,13 @@ Connector logs and errors should avoid dumping full raw payloads if they could c
 
 Local-only connectors read checked-in sample files and perform no network calls. They are safe for CI and deterministic evaluation.
 
-Live connectors are future work. A live connector may call an approved API or MCP server only after a later milestone defines configuration, authentication, security review, and operational behavior. Until then, unsupported source modes must continue to fail clearly.
+Live connectors require approved runtime configuration. The `jira_mcp` mode is recognized now but intentionally fails in this local runtime before any credential lookup, network call, or Jira request. A future work-environment implementation may call an approved MCP server only after configuration, authentication, security review, and operational behavior are supplied outside this repository.
 
 ## Future Connector Examples
 
 ### Real Jira MCP connector
 
-A future real Jira MCP connector would call an approved Jira MCP server, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. It must not be added as part of the local sample milestone.
+The real Jira MCP connector boundary must call an approved Jira MCP server name from `sources.jira.mcp_server_name`, use `sources.jira.jql` or `sources.jira.project_keys`, honor `sources.jira.include_comments` and `sources.jira.max_results`, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. Credentials must be supplied by the approved MCP runtime, not code or checked-in config. The current local implementation raises `JiraMcpRuntimeUnavailableError` instead of executing.
 
 ### GitHub API connector
 

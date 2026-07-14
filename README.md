@@ -14,7 +14,7 @@ The first build target is a thin-slice MVP:
 6. Save the draft locally with review metadata so generated pre-reads start as facilitator-review drafts.
 7. Add tests that verify the output structure.
 
-Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
+Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server. The `jira_mcp` mode is recognized for connector readiness, but it is disabled at runtime unless a future approved MCP environment supplies the real adapter and server configuration.
 
 ## v0.4.0 Draft: Real Connector Readiness
 
@@ -85,7 +85,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli --source-mode sample --output-pat
 standup-pre-read --source-mode sample --output-path output/custom-pre-read.md
 ```
 
-The default configuration reads the issue, pull request, and prior-standup sample files in `examples/`. Use `--source-mode jira_mcp_sample --jira-mcp-path examples/jira-mcp-sample-response.json` to replace the direct sample Jira issue file with a local mock Jira MCP-style tool response while still optionally using local GitHub, prior standup, and chat sample paths. Add `--chat-path examples/chat-rich-sample.json` to include local sample Slack/Teams-style messages; chat messages are normalized into the same activity model and can contribute blockers, decisions, carryover/follow-ups, standup questions, and source references. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. Real Jira MCP, live Jira, GitHub API, and live messaging connectors are intentionally out of scope for this thin-slice MVP; unsupported source modes fail with a CLI error. The `jira_mcp_sample` connector is a mock adapter only: it reads local JSON, requires no credentials or MCP server, and performs no network calls.
+The default configuration reads the issue, pull request, and prior-standup sample files in `examples/`. Use `--source-mode jira_mcp_sample --jira-mcp-path examples/jira-mcp-sample-response.json` to replace the direct sample Jira issue file with a local mock Jira MCP-style tool response while still optionally using local GitHub, prior standup, and chat sample paths. Add `--chat-path examples/chat-rich-sample.json` to include local sample Slack/Teams-style messages; chat messages are normalized into the same activity model and can contribute blockers, decisions, carryover/follow-ups, standup questions, and source references. The generated markdown includes a `Suggested Standup Questions` section that derives facilitator questions from the same normalized activity data as the pre-read, covering blockers, risky pull requests, decisions, carryover, and detectable ownership/status gaps. `jira_mcp_sample` and `jira_mcp` are intentionally different paths. `jira_mcp_sample` is the local CI/test path: it reads checked-in mock MCP-shaped JSON, requires no credentials or MCP server, and performs no network calls. `jira_mcp` is the real-connector application boundary: it requires an approved work environment, an externally configured MCP server, and credentials supplied outside this repository. In this repo/runtime, `jira_mcp` fails clearly before attempting credentials, network calls, or Jira requests.
 
 To write a machine-readable JSON version alongside the markdown, pass `--json-output-path`:
 
@@ -132,7 +132,24 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --output-path output/custom-pre-read.md
 ```
 
-The config file prepares the shape for future Jira MCP, GitHub API, and Slack/Teams integrations, but those live connectors remain future roadmap milestones. Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
+The config file prepares the shape for Jira MCP, GitHub API, and Slack/Teams integrations. The real `jira_mcp` source mode is recognized but remains unavailable in this local repository runtime until tested in an approved work environment.
+Example placeholder-only Jira MCP config values:
+
+```yaml
+sources:
+  jira:
+    enabled: true
+    mode: jira_mcp
+    mcp_server_name: placeholder-jira-mcp-server
+    jql: project in (EXAMPLE) AND updated >= -1d
+    project_keys:
+      - EXAMPLE
+    include_comments: false
+    max_results: 50
+```
+
+Do not put credentials, tokens, real Jira URLs, or work-specific project keys in this file. `sources.jira.enabled: false` explicitly disables real Jira MCP execution, and the local runtime still fails safely even when `enabled` is true because no approved MCP adapter is wired here.
+ Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
 
 ## Facilitator Review Mode
 

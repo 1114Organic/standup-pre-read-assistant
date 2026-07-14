@@ -17,9 +17,12 @@ from standup_pre_read.collectors import (
 from standup_pre_read.config import Config
 from standup_pre_read.connectors import (
     ConnectorContractError,
+    JiraMcpConnector,
+    JiraMcpRuntimeUnavailableError,
     JiraMcpSampleSourceConnector,
     SampleSourceConnector,
     SourceData,
+    source_connector_for,
     validate_source_data,
 )
 from standup_pre_read.generator import generate_pre_read, generate_pre_read_document
@@ -114,6 +117,71 @@ def test_json_output_includes_chat_derived_items(tmp_path: Path) -> None:
     assert any("chat-003" in item["source_refs"] for item in payload["carryover"])
     assert any(reference["source_system"] == "chat" for reference in payload["source_references"])
 
+
+
+def test_parse_args_accepts_real_jira_mcp_mode(tmp_path: Path) -> None:
+    output_path = tmp_path / "real-mcp-pre-read.md"
+    config = parse_args(["--source-mode", "jira_mcp", "--output-path", str(output_path)])
+
+    assert config.source_mode == "jira_mcp"
+    assert config.output_path == output_path
+    assert isinstance(source_connector_for(config), JiraMcpConnector)
+
+
+def test_config_loads_real_jira_mcp_settings(tmp_path: Path) -> None:
+    config_path = tmp_path / "team.yaml"
+    config_path.write_text(
+        """team:
+  name: Example Team
+sources:
+  jira:
+    enabled: true
+    mode: jira_mcp
+    mcp_server_name: placeholder-jira-mcp
+    jql: project in (EXAMPLE) AND updated >= -1d
+    project_keys:
+      - EXAMPLE
+    include_comments: true
+    max_results: 25
+""",
+        encoding="utf-8",
+    )
+
+    config = parse_args(["--config", str(config_path)])
+
+    assert config.source_mode == "jira_mcp"
+    assert config.jira_enabled is True
+    assert config.jira_mcp_server_name == "placeholder-jira-mcp"
+    assert config.jira_jql == "project in (EXAMPLE) AND updated >= -1d"
+    assert config.jira_project_keys == ("EXAMPLE",)
+    assert config.jira_include_comments is True
+    assert config.jira_max_results == 25
+
+
+def test_real_jira_mcp_fails_safely_without_approved_runtime(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import socket
+
+    def fail_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("network connection attempted")
+
+    monkeypatch.setattr(socket, "create_connection", fail_network)
+
+    with pytest.raises(JiraMcpRuntimeUnavailableError) as excinfo:
+        build_pre_read(Config(source_mode="jira_mcp", output_path=tmp_path / "real-mcp.md"))
+
+    message = str(excinfo.value)
+    assert "approved MCP runtime" in message
+    assert "sources.jira.mcp_server_name" in message
+    assert "No credentials, network calls, or Jira requests were attempted" in message
+    assert not (tmp_path / "real-mcp.md").exists()
+
+
+def test_real_jira_mcp_disabled_config_message_is_clear() -> None:
+    with pytest.raises(JiraMcpRuntimeUnavailableError) as excinfo:
+        JiraMcpConnector(Config(source_mode="jira_mcp", jira_enabled=False)).load()
+
+    assert "disabled by config" in str(excinfo.value)
+    assert "sources.jira.enabled is false" in str(excinfo.value)
 
 
 def test_jira_mcp_sample_response_loads_and_normalizes() -> None:
@@ -458,10 +526,10 @@ def test_build_pre_read_uses_default_sample_source_mode(tmp_path: Path) -> None:
     assert "Follow up with IAM approver for DEMO-103" in markdown
 
 
-def test_build_pre_read_rejects_unsupported_source_mode(tmp_path: Path) -> None:
-    config = Config(source_mode="jira_mcp", output_path=tmp_path / "standup-pre-read.md")
+def test_build_pre_read_rejects_unknown_source_mode(tmp_path: Path) -> None:
+    config = Config(source_mode="unknown", output_path=tmp_path / "standup-pre-read.md")
 
-    with pytest.raises(ValueError, match="Unsupported source_mode 'jira_mcp'"):
+    with pytest.raises(ValueError, match="Unsupported source_mode 'unknown'"):
         build_pre_read(config)
 
 
@@ -796,10 +864,10 @@ def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.Captu
     assert str(output_path) in capsys.readouterr().out
 
 
-def test_main_rejects_unsupported_source_mode_cleanly(tmp_path: Path) -> None:
+def test_main_rejects_unavailable_jira_mcp_mode_cleanly(tmp_path: Path) -> None:
     output_path = tmp_path / "cli-pre-read.md"
 
-    with pytest.raises(SystemExit, match="Unsupported source_mode 'jira_mcp'"):
+    with pytest.raises(SystemExit, match="approved MCP runtime"):
         main(["--source-mode", "jira_mcp", "--output-path", str(output_path)])
 
     assert not output_path.exists()
