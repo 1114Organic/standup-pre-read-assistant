@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased / v0.7.0 Draft: Connector Resilience and Source Health
+
+- Documented the next connector-hardening milestone for source health reporting, degraded-source handling, connector availability checks, and fail-safe resilience expectations.
+- Preserved the existing local-only sample workflows, safe `jira_mcp` runtime boundary, and no-secrets/no-work-specific-data constraints.
+- Kept prior release notes intact so v0.1.0 through v0.6.0 remain available as project history.
+
 ## Unreleased / v0.6.0 Draft: Real Jira MCP Connector Readiness
 
 - Added the `jira_mcp` source mode as the application-side boundary for a future approved real Jira MCP connector.
