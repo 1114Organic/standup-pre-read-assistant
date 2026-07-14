@@ -1,0 +1,58 @@
+team:
+  name: Example Team
+  timezone: Etc/UTC
+  standup_time: "09:30"
+  lookback_hours: 24
+
+sources:
+  jira:
+    enabled: true
+    mode: sample
+    mcp_server_name: example-jira-mcp-server
+    jql: project in (EXAMPLE) AND updated >= -1d
+    project_keys:
+      - EXAMPLE
+    include_comments: false
+    max_results: 50
+
+  github:
+    enabled: true
+    mode: sample
+    repositories:
+      - example-repository
+    include_reviews: true
+    include_checks: true
+    stale_pr_days: 5
+
+  chat:
+    enabled: false
+    provider: sample
+    channels:
+      - example-team-channel
+    lookback_hours: 24
+    include_threads: true
+    signal_keywords:
+      - blocked
+      - decision needed
+      - follow up
+
+outputs:
+  markdown_path: output/standup-pre-read.md
+  json_path: output/standup-pre-read.json
+  approved_output_path: output/approved-standup-pre-read.md
+
+review:
+  default_status: draft
+  reviewer: Example Reviewer
+  require_approval_before_posting: true
+
+posting:
+  enabled: false
+  provider: slack
+  destination_channel: example-approved-updates
+  post_only_approved: true
+
+security:
+  allow_live_connectors: false
+  require_read_only_tokens: true
+  redact_sensitive_values: true

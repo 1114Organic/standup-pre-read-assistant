@@ -959,3 +959,75 @@ def test_connector_contract_rejects_invalid_timestamps_with_clear_path() -> None
     message = str(excinfo.value)
     assert "jira_data.issues[0].updated must be a valid ISO-8601 timestamp" in message
     assert "chat_data.channels[0].messages[0].timestamp must be a valid ISO-8601 timestamp" in message
+
+
+def test_example_team_config_loads_without_secrets() -> None:
+    config_text = Path("config/example-team.yaml").read_text(encoding="utf-8")
+    lowered = config_text.lower()
+
+    assert "xox" not in lowered
+    assert "ghp_" not in lowered
+    assert "bearer " not in lowered
+    assert "password:" not in lowered
+    assert "http://" not in lowered
+    assert "https://" not in lowered
+
+    config = parse_args(["--config", "config/example-team.yaml"])
+
+    assert config.team_name == "Example Team"
+    assert config.source_mode == "sample"
+    assert config.output_path == Path("output/standup-pre-read.md")
+    assert config.json_output_path == Path("output/standup-pre-read.json")
+    assert config.review_status == "draft"
+    assert config.stale_pr_days == 5
+
+
+def test_cli_flags_override_example_team_config(tmp_path: Path) -> None:
+    output_path = tmp_path / "override.md"
+    json_path = tmp_path / "override.json"
+
+    config = parse_args(
+        [
+            "--config",
+            "config/example-team.yaml",
+            "--source-mode",
+            "jira_mcp_sample",
+            "--output-path",
+            str(output_path),
+            "--json-output-path",
+            str(json_path),
+            "--reviewer",
+            "CLI Reviewer",
+            "--stale-pr-days",
+            "2",
+        ]
+    )
+
+    assert config.source_mode == "jira_mcp_sample"
+    assert config.output_path == output_path
+    assert config.json_output_path == json_path
+    assert config.reviewer == "CLI Reviewer"
+    assert config.stale_pr_days == 2
+
+
+def test_example_team_config_preserves_sample_mode_generation(tmp_path: Path) -> None:
+    output_path = tmp_path / "configured.md"
+    json_path = tmp_path / "configured.json"
+
+    config = parse_args(
+        [
+            "--config",
+            "config/example-team.yaml",
+            "--output-path",
+            str(output_path),
+            "--json-output-path",
+            str(json_path),
+        ]
+    )
+    markdown = build_pre_read(config)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+
+    assert output_path.exists()
+    assert payload["team_name"] == "Example Team"
+    assert payload["source_mode"] == "sample"
+    assert "## Executive Summary" in markdown
