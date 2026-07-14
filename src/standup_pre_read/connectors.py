@@ -80,6 +80,13 @@ class JiraMcpConnector:
     config: Config
 
     def load(self) -> SourceData:
+        if not self.config.allow_live_connectors:
+            raise JiraMcpRuntimeUnavailableError(
+                "jira_mcp source mode is disabled by default: security.allow_live_connectors "
+                "is false. Real Jira MCP execution requires an approved work environment, "
+                "an externally configured MCP server, and credentials supplied outside this "
+                "repository. No credentials, network calls, or Jira requests were attempted."
+            )
         if not self.config.jira_enabled:
             raise JiraMcpRuntimeUnavailableError(
                 "jira_mcp source mode is disabled by config: sources.jira.enabled is false."

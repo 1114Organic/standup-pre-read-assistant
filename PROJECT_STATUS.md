@@ -2,6 +2,10 @@
 
 This document summarizes the current generic MVP state for the Standup Pre-Read Assistant and the likely next milestones. It intentionally avoids work-specific names, URLs, project keys, and team names.
 
+## v0.6.0 Draft Status: Real Jira MCP Connector Readiness
+
+The current draft milestone adds the application-side `jira_mcp` source mode, Jira MCP config fields, and a safe `JiraMcpConnector` boundary for a future approved work-environment implementation. Real execution remains disabled by default through `security.allow_live_connectors: false`; this repository raises a clear runtime-unavailable error before credentials, network calls, or Jira requests can be attempted. `jira_mcp_sample` remains the deterministic local MCP-shaped path for CI and evaluation.
+
 ## v0.4.0 Draft Status: Real Connector Readiness
 
 The v0.4.0 connector contract validation exists and documents/enforces the connector boundary without adding live integrations. The connector contract in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) defines the `SourceData` envelope, required and optional payload fields, source reference expectations, timestamp and confidence guidance, clear validation errors, local-only versus live connector rules, and no-secrets guidance. The local `sample` and `jira_mcp_sample` connectors now run lightweight validation before normalization so future connector work has a clear compatibility target while CI and evaluation remain deterministic.

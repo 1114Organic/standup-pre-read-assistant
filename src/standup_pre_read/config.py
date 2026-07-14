@@ -27,6 +27,7 @@ class Config:
     jira_project_keys: tuple[str, ...] = ()
     jira_include_comments: bool = False
     jira_max_results: int = 50
+    allow_live_connectors: bool = False
 
 
 def _optional_path(value: Any) -> Path | None:
@@ -147,9 +148,12 @@ def load_config_file(path: Path) -> Config:
     sources = loaded.get("sources", {})
     outputs = loaded.get("outputs", {})
     review = loaded.get("review", {})
-    sections_are_mappings = all(isinstance(section, dict) for section in (team, sources, outputs, review))
+    security = loaded.get("security", {})
+    sections_are_mappings = all(isinstance(section, dict) for section in (team, sources, outputs, review, security))
     if not sections_are_mappings:
-        raise ValueError("Config sections team, sources, outputs, and review must be YAML mappings when provided.")
+        raise ValueError(
+            "Config sections team, sources, outputs, review, and security must be YAML mappings when provided."
+        )
 
     jira = sources.get("jira", {})
     github = sources.get("github", {})
@@ -192,6 +196,10 @@ def load_config_file(path: Path) -> Config:
     jira_max_results = _int_value(jira.get("max_results"), "sources.jira.max_results")
     if jira_max_results is not None:
         updates["jira_max_results"] = jira_max_results
+
+    allow_live_connectors = _bool_value(security.get("allow_live_connectors"), "security.allow_live_connectors")
+    if allow_live_connectors is not None:
+        updates["allow_live_connectors"] = allow_live_connectors
 
     output_path = _optional_path(outputs.get("markdown_path"))
     if output_path is not None:
