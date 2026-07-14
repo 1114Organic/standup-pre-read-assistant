@@ -96,7 +96,7 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
   --json-output-path output/standup-pre-read.json
 ```
 
-The JSON output is generated from the same structured pre-read document as markdown, so enabling it does not change the markdown draft. It includes metadata (`generated_at`, `team_name` when configured, `source_mode`, `review_status`, optional `reviewed_at`, optional `reviewer`, optional `review_notes`, and a `data_window` when source timestamps are available), `executive_summary`, `progress`, `blockers`, `decisions`, `risks`, `carryover`, `suggested_agenda`, `suggested_questions`, and `source_references`. Each structured list item includes `text` and `source_refs`, plus `priority`, `confidence`, and `related_work_items` when those values are available; markdown sections keep their existing format while using priority to put high-signal topics first.
+The JSON output is generated from the same structured pre-read document as markdown, so enabling it does not change the markdown draft. It includes metadata (`generated_at`, `team_name` when configured, `source_mode`, `review_status`, optional `reviewed_at`, optional `reviewer`, optional `review_notes`, and a `data_window` when source timestamps are available), `executive_summary`, `progress`, `blockers`, `decisions`, `risks`, `carryover`, `suggested_agenda`, `suggested_questions`, `source_health`, and `source_references`. Each structured list item includes `text` and `source_refs`, plus `priority`, `confidence`, and `related_work_items` when those values are available; markdown sections keep their existing format while using priority to put high-signal topics first. The markdown also includes a `Source Health` section so skipped or failed optional sources are visible to facilitators.
 
 To run the richer demo-data scenario, point the same sample-mode CLI at the alternate example files:
 
@@ -146,9 +146,11 @@ sources:
       - EXAMPLE
     include_comments: false
     max_results: 50
+security:
+  allow_live_connectors: false
 ```
 
-Do not put credentials, tokens, real Jira URLs, or work-specific project keys in this file. `sources.jira.enabled: false` explicitly disables real Jira MCP execution, and the local runtime still fails safely even when `enabled` is true because no approved MCP adapter is wired here.
+Do not put credentials, tokens, real Jira URLs, or work-specific project keys in this file. `security.allow_live_connectors: false` keeps live connector execution disabled by default, `sources.jira.enabled: false` explicitly disables Jira MCP execution even in a future approved runtime, and the local runtime still fails safely even when those switches are true because no approved MCP adapter is wired here.
  Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
 
 ## Facilitator Review Mode

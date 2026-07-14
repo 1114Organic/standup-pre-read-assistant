@@ -22,6 +22,15 @@ A connector returns one `SourceData` object with these fields:
 | `github_data` | Yes | Dictionary with a `repositories` list | The list may be empty for connectors that do not provide PR data, but each repository must include `name` and `pull_requests`. |
 | `prior_markdown` | Yes | String | Prior standup notes may be empty, but must be a string. |
 | `chat_data` | Yes | Dictionary with a `channels` list | Use `{"channels": []}` when chat is not configured. |
+| `source_health` | Yes | List of source health records | Records include source name, `ok`/`failed`/`skipped` status, required flag, and a concise message. |
+
+## Required, Optional, and Disabled Sources
+
+Current local Jira, GitHub, and prior-standup sources are required for sample generation. If one of those required sources cannot be loaded, the run fails clearly with the source name and does not write a partial pre-read.
+
+Chat is optional. If optional chat is disabled, connectors return `{"channels": []}` and report the source as `skipped` in source health. If optional chat is configured but fails to load, the run continues with empty chat data and reports chat as `failed` in source health.
+
+Future live sources should follow the same pattern: required source failures stop the run with a concise connector error, optional source failures are isolated and visible in source health, and disabled sources are reported as `skipped` rather than silently disappearing.
 
 ## Required Fields
 
@@ -96,6 +105,8 @@ Connectors should fail fast with clear errors when required payload shape is mis
 
 A connector should not silently drop malformed required records if that would hide source coverage problems. Optional fields can be omitted when unavailable.
 
+Required connector load failures should raise a clear source-specific error. Optional connector load failures should be captured in `source_health`, use a safe empty fallback payload, and allow the run to complete so facilitators can see which non-required source was unavailable.
+
 ## Security and No-Secrets Guidance
 
 Do not commit credentials, tokens, workspace URLs, private project keys, channel names, customer data, or environment-specific configuration. Local examples must stay generic and sanitized. Live connectors should receive credentials only through an approved secrets mechanism in a future milestone; this repository should not contain those secrets.
@@ -106,13 +117,13 @@ Connector logs and errors should avoid dumping full raw payloads if they could c
 
 Local-only connectors read checked-in sample files and perform no network calls. They are safe for CI and deterministic evaluation.
 
-Live connectors require approved runtime configuration. The `jira_mcp` mode is recognized now but intentionally fails in this local runtime before any credential lookup, network call, or Jira request. A future work-environment implementation may call an approved MCP server only after configuration, authentication, security review, and operational behavior are supplied outside this repository.
+Live connectors require approved runtime configuration. The `jira_mcp` mode is recognized now but intentionally fails in this local runtime before any credential lookup, network call, or Jira request. The generic config switch `security.allow_live_connectors` defaults to `false` so live connector paths are disabled by default even before connector-specific checks run. A future work-environment implementation may call an approved MCP server only after configuration, authentication, security review, and operational behavior are supplied outside this repository.
 
 ## Future Connector Examples
 
 ### Real Jira MCP connector
 
-The real Jira MCP connector boundary must call an approved Jira MCP server name from `sources.jira.mcp_server_name`, use `sources.jira.jql` or `sources.jira.project_keys`, honor `sources.jira.include_comments` and `sources.jira.max_results`, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. Credentials must be supplied by the approved MCP runtime, not code or checked-in config. The current local implementation raises `JiraMcpRuntimeUnavailableError` instead of executing.
+The real Jira MCP connector boundary must require `security.allow_live_connectors: true`, call an approved Jira MCP server name from `sources.jira.mcp_server_name`, use `sources.jira.jql` or `sources.jira.project_keys`, honor `sources.jira.include_comments` and `sources.jira.max_results`, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. Credentials must be supplied by the approved MCP runtime, not code or checked-in config. The current local implementation raises `JiraMcpRuntimeUnavailableError` instead of executing.
 
 ### GitHub API connector
 

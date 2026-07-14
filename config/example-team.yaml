@@ -9,6 +9,7 @@ sources:
     enabled: true
     mode: sample
     mcp_server_name: example-jira-mcp-server
+    mcp_tool_name: search_issues
     jql: project in (EXAMPLE) AND updated >= -1d
     project_keys:
       - EXAMPLE
@@ -18,15 +19,21 @@ sources:
   github:
     enabled: true
     mode: sample
+    auth_method: external_secret
     repositories:
       - example-repository
+    include_pull_requests: true
     include_reviews: true
     include_checks: true
+    pull_request_states:
+      - open
+      - merged
     stale_pr_days: 5
 
   chat:
     enabled: false
-    provider: sample
+    provider: sample # future values: slack or teams
+    auth_method: external_secret
     channels:
       - example-team-channel
     lookback_hours: 24

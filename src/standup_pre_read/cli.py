@@ -25,6 +25,7 @@ def build_pre_read(config: Config | None = None) -> str:
         review_status=config.review_status,
         reviewer=config.reviewer,
         review_notes=config.review_notes,
+        source_health=source_data.source_health,
     )
     markdown = render_pre_read_markdown(document)
     config.output_path.parent.mkdir(parents=True, exist_ok=True)

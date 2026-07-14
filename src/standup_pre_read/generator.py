@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
+from .connectors import SourceHealth
 from .models import Activity
 
 ReviewStatus = Literal["draft", "approved", "rejected"]
@@ -70,6 +71,7 @@ class PreReadDocument:
     suggested_agenda: tuple[GeneratedBullet, ...]
     suggested_questions: tuple[GeneratedBullet, ...]
     source_references: tuple[dict[str, str], ...]
+    source_health: tuple[SourceHealth, ...]
 
     def to_json_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -85,6 +87,7 @@ class PreReadDocument:
             "suggested_agenda": [item.to_json_item() for item in self.suggested_agenda],
             "suggested_questions": [item.to_json_item() for item in self.suggested_questions],
             "source_references": list(self.source_references),
+            "source_health": [item.to_json_dict() for item in self.source_health],
         }
         if self.team_name:
             payload["team_name"] = self.team_name
@@ -519,6 +522,7 @@ def generate_pre_read_document(
     review_status: ReviewStatus = "draft",
     reviewer: str | None = None,
     review_notes: str | None = None,
+    source_health: tuple[SourceHealth, ...] = (),
 ) -> PreReadDocument:
     today = today or date.today()
     if review_status not in {"draft", "approved", "rejected"}:
@@ -617,6 +621,7 @@ def generate_pre_read_document(
         suggested_agenda=_agenda(blockers, decisions, risks, activities),
         suggested_questions=_standup_questions(blockers, decisions, risks, carryover, activities, today, stale_pr_days),
         source_references=_references(activities),
+        source_health=source_health,
     )
 
 
@@ -678,12 +683,26 @@ def render_pre_read_markdown(document: PreReadDocument) -> str:
         "",
         *question_lines,
         "",
+        "## Source Health",
+        "",
+        *_render_source_health(document.source_health),
+        "",
         "## Source References",
         "",
         *[f"- {reference['source_ref']}: {reference['url']}" for reference in document.source_references],
         "",
     ]
     return "\n".join(lines)
+
+
+def _render_source_health(source_health: tuple[SourceHealth, ...]) -> list[str]:
+    if not source_health:
+        return ["- No source health metadata was supplied."]
+    lines = []
+    for item in source_health:
+        requirement = "required" if item.required else "optional"
+        lines.append(f"- {item.name}: {item.status} ({requirement}) - {item.message}")
+    return lines
 
 
 def generate_pre_read(activities: list[Activity], team_name: str, stale_pr_days: int, today: date | None = None) -> str:

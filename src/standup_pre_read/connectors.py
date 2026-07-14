@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Protocol
 
@@ -15,11 +15,28 @@ from .config import Config
 
 
 @dataclass(frozen=True)
+class SourceHealth:
+    name: str
+    status: str
+    required: bool
+    message: str
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "status": self.status,
+            "required": self.required,
+            "message": self.message,
+        }
+
+
+@dataclass(frozen=True)
 class SourceData:
     jira_data: dict[str, Any]
     github_data: dict[str, Any]
     prior_markdown: str
     chat_data: dict[str, Any]
+    source_health: tuple[SourceHealth, ...] = field(default_factory=tuple)
 
 
 class ConnectorContractError(ValueError):
@@ -28,6 +45,10 @@ class ConnectorContractError(ValueError):
 
 class JiraMcpRuntimeUnavailableError(RuntimeError):
     """Raised when real Jira MCP mode is selected without an approved runtime adapter."""
+
+
+class RequiredSourceUnavailableError(RuntimeError):
+    """Raised when a required connector cannot load safely."""
 
 
 class SourceConnector(Protocol):
@@ -40,11 +61,28 @@ class SampleSourceConnector:
     config: Config
 
     def load(self) -> SourceData:
+        source_health: list[SourceHealth] = []
+        jira_data = _load_required_source("jira", lambda: load_jira_sample(self.config.jira_path), source_health)
+        github_data = _load_required_source(
+            "github", lambda: load_github_pr_sample(self.config.github_path), source_health
+        )
+        prior_markdown = _load_required_source(
+            "prior_standup", lambda: load_prior_standup(self.config.prior_standup_path), source_health
+        )
+        chat_data = _load_optional_source(
+            "chat",
+            lambda: load_chat_sample(self.config.chat_path),
+            source_health,
+            enabled=self.config.chat_path is not None,
+            skipped_message="No chat sample path configured.",
+            fallback={"channels": []},
+        )
         source_data = SourceData(
-            jira_data=load_jira_sample(self.config.jira_path),
-            github_data=load_github_pr_sample(self.config.github_path),
-            prior_markdown=load_prior_standup(self.config.prior_standup_path),
-            chat_data=load_chat_sample(self.config.chat_path),
+            jira_data=jira_data,
+            github_data=github_data,
+            prior_markdown=prior_markdown,
+            chat_data=chat_data,
+            source_health=tuple(source_health),
         )
         validate_source_data(source_data)
         return source_data
@@ -55,11 +93,30 @@ class JiraMcpSampleSourceConnector:
     config: Config
 
     def load(self) -> SourceData:
+        source_health: list[SourceHealth] = []
+        jira_data = _load_required_source(
+            "jira_mcp_sample", lambda: load_jira_mcp_sample(self.config.jira_mcp_path), source_health
+        )
+        github_data = _load_required_source(
+            "github", lambda: load_github_pr_sample(self.config.github_path), source_health
+        )
+        prior_markdown = _load_required_source(
+            "prior_standup", lambda: load_prior_standup(self.config.prior_standup_path), source_health
+        )
+        chat_data = _load_optional_source(
+            "chat",
+            lambda: load_chat_sample(self.config.chat_path),
+            source_health,
+            enabled=self.config.chat_path is not None,
+            skipped_message="No chat sample path configured.",
+            fallback={"channels": []},
+        )
         source_data = SourceData(
-            jira_data=load_jira_mcp_sample(self.config.jira_mcp_path),
-            github_data=load_github_pr_sample(self.config.github_path),
-            prior_markdown=load_prior_standup(self.config.prior_standup_path),
-            chat_data=load_chat_sample(self.config.chat_path),
+            jira_data=jira_data,
+            github_data=github_data,
+            prior_markdown=prior_markdown,
+            chat_data=chat_data,
+            source_health=tuple(source_health),
         )
         validate_source_data(source_data)
         return source_data
@@ -80,6 +137,13 @@ class JiraMcpConnector:
     config: Config
 
     def load(self) -> SourceData:
+        if not self.config.allow_live_connectors:
+            raise JiraMcpRuntimeUnavailableError(
+                "jira_mcp source mode is disabled by default: security.allow_live_connectors "
+                "is false. Real Jira MCP execution requires an approved work environment, "
+                "an externally configured MCP server, and credentials supplied outside this "
+                "repository. No credentials, network calls, or Jira requests were attempted."
+            )
         if not self.config.jira_enabled:
             raise JiraMcpRuntimeUnavailableError(
                 "jira_mcp source mode is disabled by config: sources.jira.enabled is false."
@@ -90,6 +154,37 @@ class JiraMcpConnector:
             "adapter boundary; use jira_mcp_sample for local tests. No credentials, "
             "network calls, or Jira requests were attempted."
         )
+
+
+def _load_required_source(name: str, loader: Any, source_health: list[SourceHealth]) -> Any:
+    try:
+        payload = loader()
+    except Exception as exc:
+        source_health.append(SourceHealth(name=name, status="failed", required=True, message=str(exc)))
+        raise RequiredSourceUnavailableError(f"Required source '{name}' failed: {exc}") from exc
+    source_health.append(SourceHealth(name=name, status="ok", required=True, message="Loaded successfully."))
+    return payload
+
+
+def _load_optional_source(
+    name: str,
+    loader: Any,
+    source_health: list[SourceHealth],
+    *,
+    enabled: bool,
+    skipped_message: str,
+    fallback: Any,
+) -> Any:
+    if not enabled:
+        source_health.append(SourceHealth(name=name, status="skipped", required=False, message=skipped_message))
+        return fallback
+    try:
+        payload = loader()
+    except Exception as exc:
+        source_health.append(SourceHealth(name=name, status="failed", required=False, message=str(exc)))
+        return fallback
+    source_health.append(SourceHealth(name=name, status="ok", required=False, message="Loaded successfully."))
+    return payload
 
 
 def _is_non_empty_string(value: Any) -> bool:
