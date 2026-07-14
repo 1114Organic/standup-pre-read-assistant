@@ -15,6 +15,13 @@ from standup_pre_read.collectors import (
     load_prior_standup,
 )
 from standup_pre_read.config import Config
+from standup_pre_read.connectors import (
+    ConnectorContractError,
+    JiraMcpSampleSourceConnector,
+    SampleSourceConnector,
+    SourceData,
+    validate_source_data,
+)
 from standup_pre_read.generator import generate_pre_read, generate_pre_read_document
 from standup_pre_read.models import Activity
 from standup_pre_read.normalizer import (
@@ -898,3 +905,57 @@ def test_parse_args_accepts_review_options(tmp_path: Path) -> None:
     assert config.reviewer == "Facilitator"
     assert config.review_notes == "Ready."
     assert config.approved_output_path == approved_output_path
+
+
+def test_sample_connector_output_satisfies_connector_contract() -> None:
+    source_data = SampleSourceConnector(Config()).load()
+
+    validate_source_data(source_data)
+    assert source_data.jira_data["issues"]
+    assert source_data.github_data["repositories"]
+    assert isinstance(source_data.prior_markdown, str)
+    assert source_data.chat_data == {"channels": []}
+
+
+def test_jira_mcp_sample_connector_output_satisfies_connector_contract() -> None:
+    source_data = JiraMcpSampleSourceConnector(Config(source_mode="jira_mcp_sample")).load()
+
+    validate_source_data(source_data)
+    assert source_data.jira_data["issues"]
+    assert all(issue["key"].startswith("MCP-") for issue in source_data.jira_data["issues"])
+
+
+def test_connector_contract_rejects_missing_required_payloads() -> None:
+    invalid_source_data = SourceData(
+        jira_data={"issues": [{"title": "Missing key and status"}]},
+        github_data={
+            "repositories": [{"name": "sample-repo", "pull_requests": [{"title": "Missing number and state"}]}]
+        },
+        prior_markdown="# Prior standup",
+        chat_data={"channels": []},
+    )
+
+    with pytest.raises(ConnectorContractError) as excinfo:
+        validate_source_data(invalid_source_data)
+
+    message = str(excinfo.value)
+    assert "jira_data.issues[0].key is required" in message
+    assert "jira_data.issues[0].status is required" in message
+    assert "github_data.repositories[0].pull_requests[0].number is required" in message
+    assert "github_data.repositories[0].pull_requests[0].state is required" in message
+
+
+def test_connector_contract_rejects_invalid_timestamps_with_clear_path() -> None:
+    invalid_source_data = SourceData(
+        jira_data={"issues": [{"key": "BAD-1", "status": "In Progress", "updated": "yesterday"}]},
+        github_data={"repositories": []},
+        prior_markdown="# Prior standup",
+        chat_data={"channels": [{"messages": [{"id": "chat-1", "text": "Blocked", "timestamp": "soon"}]}]},
+    )
+
+    with pytest.raises(ConnectorContractError) as excinfo:
+        validate_source_data(invalid_source_data)
+
+    message = str(excinfo.value)
+    assert "jira_data.issues[0].updated must be a valid ISO-8601 timestamp" in message
+    assert "chat_data.channels[0].messages[0].timestamp must be a valid ISO-8601 timestamp" in message

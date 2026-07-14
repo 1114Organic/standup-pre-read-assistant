@@ -2,6 +2,10 @@
 
 This document summarizes the current generic MVP state for the Standup Pre-Read Assistant and the likely next milestones. It intentionally avoids work-specific names, URLs, project keys, and team names.
 
+## v0.4.0 Draft Status: Real Connector Readiness
+
+The current draft milestone documents and enforces the connector boundary without adding live integrations. The connector contract in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) defines the `SourceData` envelope, required and optional payload fields, source reference expectations, timestamp and confidence guidance, clear validation errors, local-only versus live connector rules, and no-secrets guidance. The local `sample` and `jira_mcp_sample` connectors now run lightweight validation before normalization so future connector work has a clear compatibility target while CI and evaluation remain deterministic.
+
 ## v0.3.0 Draft Status: Local GitHub PR Intelligence
 
 The current draft milestone improves sample-only GitHub PR understanding while keeping live integrations out of scope. Local PR fixtures include richer states for review requested, changes requested, approved, merged, failing CI, stale open PRs, blocked merge state, missing linked issue, unclear owner, and decision-dependent PRs. Normalized PR activities preserve review, CI, merge, reviewer, approval, requested-change, draft, author/owner, linked-issue, timestamp, and source-reference metadata.

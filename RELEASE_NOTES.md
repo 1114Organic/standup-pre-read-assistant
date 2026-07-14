@@ -1,5 +1,12 @@
 # Release Notes
 
+## Unreleased / v0.4.0 Draft: Real Connector Readiness
+
+- Added `docs/CONNECTOR_CONTRACT.md` to document source connector purpose, `SourceData` expectations, required and optional fields, source references, timestamp and confidence guidance, validation/error handling, security/no-secrets rules, local-only versus live connector boundaries, and future Jira MCP, GitHub API, and Slack/Teams connector examples.
+- Added lightweight connector payload validation for the current local `sample` and `jira_mcp_sample` adapters so malformed required fields fail early with clear field-path errors before normalization.
+- Added tests proving both local connector modes satisfy the contract, invalid payloads fail clearly, and the existing evaluation scenarios remain covered.
+- No live Jira, Jira MCP, GitHub API, Slack, Teams, deployment, credentials, tokens, or environment-specific configuration were added.
+
 
 ## Release: v0.3.0 Draft GitHub PR Intelligence
 
