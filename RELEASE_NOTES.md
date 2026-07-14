@@ -1,6 +1,13 @@
 # Release Notes
 
-## Unreleased / v0.4.0 Draft: Real Connector Readiness
+## Unreleased / v0.5.0 Draft: Integration Config Foundation
+
+- Added `ROADMAP.md` to show the path from local MVP through one-team pilot and identify expected inputs, outputs, success criteria, and out-of-scope items for upcoming live integration milestones.
+- Added `config/example-team.yaml` as a sanitized, generic team configuration template for future Jira, GitHub, chat, output, review, posting, and security settings.
+- Added optional `--config` YAML loading for supported local CLI settings, with explicit CLI flags overriding loaded values.
+- Live Jira MCP, GitHub API, Slack, Teams, posting, credentials, deployment, and work-specific data remain out of scope.
+
+## Release: v0.4.0 Connector Contract and Validation
 
 - Added `docs/CONNECTOR_CONTRACT.md` to document source connector purpose, `SourceData` expectations, required and optional fields, source references, timestamp and confidence guidance, validation/error handling, security/no-secrets rules, local-only versus live connector boundaries, and future Jira MCP, GitHub API, and Slack/Teams connector examples.
 - Added lightweight connector payload validation for the current local `sample` and `jira_mcp_sample` adapters so malformed required fields fail early with clear field-path errors before normalization.

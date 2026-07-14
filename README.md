@@ -2,7 +2,7 @@
 
 AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, optional sample chat messages, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
 
-For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md). Connector payload expectations for current local adapters and future live connectors are documented in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md).
+For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md). The integration path is tracked in [ROADMAP.md](ROADMAP.md). Connector payload expectations for current local adapters and future live connectors are documented in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md).
 
 The first build target is a thin-slice MVP: 
 
@@ -112,6 +112,27 @@ PYTHONPATH=src python3 -m standup_pre_read.cli \
 ```
 
 The rich scenario remains generic demo data. It includes completed work, in-progress work, a blocker, a decision, stale/risky pull request signals, unresolved carryover, local chat blockers/decisions/follow-ups, and an item with unclear ownership/status so reviewers can evaluate the generated standup questions without relying on the default `DEMO-*` sample IDs.
+
+
+## Integration Configuration
+
+`config/example-team.yaml` is a sanitized, easy-to-edit starting point for future team-level integration settings. It includes generic placeholders for team metadata, Jira, GitHub, chat, output paths, facilitator review defaults, posting preferences, and security switches. It intentionally contains no real tokens, URLs, project keys, channel names, organization names, or work-specific data.
+
+You can use it with local sample mode today:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli --config config/example-team.yaml
+```
+
+Explicit CLI flags override values loaded from the YAML config, for example:
+
+```bash
+PYTHONPATH=src python3 -m standup_pre_read.cli \
+  --config config/example-team.yaml \
+  --output-path output/custom-pre-read.md
+```
+
+The config file prepares the shape for future Jira MCP, GitHub API, and Slack/Teams integrations, but those live connectors remain future roadmap milestones. Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
 
 ## Facilitator Review Mode
 

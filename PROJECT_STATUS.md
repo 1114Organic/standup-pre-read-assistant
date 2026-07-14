@@ -4,7 +4,7 @@ This document summarizes the current generic MVP state for the Standup Pre-Read 
 
 ## v0.4.0 Draft Status: Real Connector Readiness
 
-The current draft milestone documents and enforces the connector boundary without adding live integrations. The connector contract in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) defines the `SourceData` envelope, required and optional payload fields, source reference expectations, timestamp and confidence guidance, clear validation errors, local-only versus live connector rules, and no-secrets guidance. The local `sample` and `jira_mcp_sample` connectors now run lightweight validation before normalization so future connector work has a clear compatibility target while CI and evaluation remain deterministic.
+The v0.4.0 connector contract validation exists and documents/enforces the connector boundary without adding live integrations. The connector contract in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) defines the `SourceData` envelope, required and optional payload fields, source reference expectations, timestamp and confidence guidance, clear validation errors, local-only versus live connector rules, and no-secrets guidance. The local `sample` and `jira_mcp_sample` connectors now run lightweight validation before normalization so future connector work has a clear compatibility target while CI and evaluation remain deterministic.
 
 ## v0.3.0 Draft Status: Local GitHub PR Intelligence
 
@@ -157,6 +157,13 @@ make evaluate
 - Static type checking with `mypy`.
 
 The evaluation harness writes `output/evaluation-report.md` and `output/evaluation-report.json` and validates required sections, blockers, decisions, carryover, resolved carryover exclusion, source references, JSON priority fields, and JSON `review_status`. The test suite verifies scenario definitions, validation checks, report writing, default draft review status, approved and rejected review metadata, approved-output write behavior, generated markdown and JSON output structures, key data-driven content, source-backed bullets and standup questions, configurable output writing, CLI argument parsing, default sample-mode behavior, rich sample JSON generation, chat sample loading and generation, and clean failure for unsupported source modes.
+
+
+## Integration Reality Check
+
+The local MVP is useful for validating summary structure, source references, PR intelligence, review metadata, and evaluation quality. Real product value for a pilot still requires approved live Jira, GitHub, and Slack or Teams integrations so the pre-read reflects actual team activity instead of checked-in fixtures. The next live integration milestone should be the real Jira MCP connector, because issue status, blockers, decisions, and carryover are the core inputs for a trustworthy standup pre-read.
+
+The v0.5.0 integration config foundation adds `config/example-team.yaml` for sanitized team-level settings, but it does not add live connector network calls or secrets.
 
 ## 6. Suggested Next Milestones
 

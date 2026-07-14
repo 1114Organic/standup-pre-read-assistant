@@ -5,7 +5,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
-from .config import Config
+from .config import Config, load_config_file
 from .connectors import source_connector_for
 from .generator import generate_pre_read_document, render_pre_read_markdown
 from .normalizer import normalize_all
@@ -44,89 +44,104 @@ def build_pre_read(config: Config | None = None) -> str:
 def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser = argparse.ArgumentParser(description="Generate a standup pre-read markdown draft.")
     parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Optional YAML team config file. Explicit CLI flags override loaded config values.",
+    )
+    parser.add_argument(
         "--source-mode",
-        default=Config.source_mode,
+        default=None,
         help="Source connector mode to use. Supported: sample, jira_mcp_sample.",
     )
     parser.add_argument(
         "--jira-path",
         type=Path,
-        default=Config.jira_path,
+        default=None,
         help="Path to the sample Jira JSON file.",
     )
     parser.add_argument(
         "--jira-mcp-path",
         type=Path,
-        default=Config.jira_mcp_path,
+        default=None,
         help="Path to the local Jira MCP-style sample response JSON file.",
     )
     parser.add_argument(
         "--github-path",
         type=Path,
-        default=Config.github_path,
+        default=None,
         help="Path to the sample GitHub pull request JSON file.",
     )
     parser.add_argument(
         "--prior-standup-path",
         type=Path,
-        default=Config.prior_standup_path,
+        default=None,
         help="Path to the prior standup markdown file.",
     )
     parser.add_argument(
         "--chat-path",
         type=Path,
-        default=Config.chat_path,
+        default=None,
         help="Optional path to a sample chat JSON file.",
     )
     parser.add_argument(
         "--output-path",
         type=Path,
-        default=Config.output_path,
+        default=None,
         help="Path where the generated markdown pre-read should be written.",
     )
     parser.add_argument(
         "--json-output-path",
         type=Path,
-        default=Config.json_output_path,
+        default=None,
         help="Optional path where a structured JSON version of the pre-read should be written.",
     )
     parser.add_argument(
         "--review-status",
         choices=("draft", "approved", "rejected"),
-        default=Config.review_status,
+        default=None,
         help="Local facilitator review status to attach to the generated pre-read.",
     )
     parser.add_argument(
         "--reviewer",
-        default=Config.reviewer,
+        default=None,
         help="Optional facilitator name or identifier for reviewed pre-reads.",
     )
     parser.add_argument(
         "--review-notes",
-        default=Config.review_notes,
+        default=None,
         help="Optional local review notes to include in markdown and JSON output.",
     )
     parser.add_argument(
         "--approved-output-path",
         type=Path,
-        default=Config.approved_output_path,
+        default=None,
         help="Optional path for an approved markdown copy; written only with --review-status approved.",
     )
-    args = parser.parse_args(argv)
-    return Config(
-        source_mode=args.source_mode,
-        jira_path=args.jira_path,
-        jira_mcp_path=args.jira_mcp_path,
-        github_path=args.github_path,
-        prior_standup_path=args.prior_standup_path,
-        chat_path=args.chat_path,
-        output_path=args.output_path,
-        json_output_path=args.json_output_path,
-        review_status=args.review_status,
-        reviewer=args.reviewer,
-        review_notes=args.review_notes,
-        approved_output_path=args.approved_output_path,
+    parser.add_argument(
+        "--stale-pr-days",
+        type=int,
+        default=None,
+        help="Number of days after which an open pull request should be treated as stale.",
     )
+    args = parser.parse_args(argv)
+    config = load_config_file(args.config) if args.config is not None else Config()
+    overrides = {
+        "source_mode": args.source_mode,
+        "jira_path": args.jira_path,
+        "jira_mcp_path": args.jira_mcp_path,
+        "github_path": args.github_path,
+        "prior_standup_path": args.prior_standup_path,
+        "chat_path": args.chat_path,
+        "output_path": args.output_path,
+        "json_output_path": args.json_output_path,
+        "review_status": args.review_status,
+        "reviewer": args.reviewer,
+        "review_notes": args.review_notes,
+        "approved_output_path": args.approved_output_path,
+        "stale_pr_days": args.stale_pr_days,
+    }
+    return Config(**{**config.__dict__, **{key: value for key, value in overrides.items() if value is not None}})
 
 
 def main(argv: Sequence[str] | None = None) -> None:
