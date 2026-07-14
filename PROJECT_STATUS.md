@@ -2,9 +2,13 @@
 
 This document summarizes the current generic MVP state for the Standup Pre-Read Assistant and the likely next milestones. It intentionally avoids work-specific names, URLs, project keys, and team names.
 
-## v0.6.0 Draft Status: Real Jira MCP Connector Readiness
+## v0.7.0 Draft Status: Connector Resilience and Source Health
 
-The current draft milestone adds the application-side `jira_mcp` source mode, Jira MCP config fields, source health reporting, and a safe `JiraMcpConnector` boundary for a future approved work-environment implementation. Real execution remains disabled by default through `security.allow_live_connectors: false`; this repository raises a clear runtime-unavailable error before credentials, network calls, or Jira requests can be attempted. `jira_mcp_sample` remains the deterministic local MCP-shaped path for CI and evaluation.
+The current draft milestone keeps application behavior local and deterministic while documenting the next connector-hardening layer: source health reporting, connector availability checks, clearer degraded-source handling, and resilience guidance for future live Jira, GitHub, and chat connectors. These updates preserve the existing `sample`, `jira_mcp_sample`, and safe `jira_mcp` boundaries; no live source calls, credentials, deployment behavior, or work-specific data are added.
+
+## v0.6.0 Status: Real Jira MCP Connector Readiness
+
+The v0.6.0 milestone adds the application-side `jira_mcp` source mode, Jira MCP config fields, and a safe `JiraMcpConnector` boundary for a future approved work-environment implementation. Real execution remains disabled by default through `security.allow_live_connectors: false`; this repository raises a clear runtime-unavailable error before credentials, network calls, or Jira requests can be attempted. `jira_mcp_sample` remains the deterministic local MCP-shaped path for CI and evaluation.
 
 ## v0.4.0 Draft Status: Real Connector Readiness
 
@@ -167,7 +171,7 @@ The evaluation harness writes `output/evaluation-report.md` and `output/evaluati
 
 The local MVP is useful for validating summary structure, source references, PR intelligence, review metadata, and evaluation quality. Real product value for a pilot still requires approved live Jira, GitHub, and Slack or Teams integrations so the pre-read reflects actual team activity instead of checked-in fixtures. The next live integration milestone is the real Jira MCP connector, because issue status, blockers, decisions, and carryover are the core inputs for a trustworthy standup pre-read. The application now recognizes `jira_mcp` and has a safe adapter boundary, but real execution still must be tested and wired only inside an approved work MCP environment.
 
-The v0.5.0 integration config foundation adds `config/example-team.yaml` for sanitized team-level settings, and v0.6.0 adds Jira MCP readiness without live connector network calls or secrets.
+The v0.5.0 integration config foundation adds `config/example-team.yaml` for sanitized team-level settings, v0.6.0 adds Jira MCP readiness without live connector network calls or secrets, and the current v0.7.0 draft records connector resilience and source-health expectations for future live integrations.
 
 ## 6. Suggested Next Milestones
 
@@ -186,6 +190,10 @@ Facilitator review mode is now available as a local file-based workflow. Future 
 ### Structured Output JSON
 
 Structured JSON output is now available via `--json-output-path`. Future enhancements can add schema versioning after the local sample-mode shape is validated.
+
+### Connector Resilience and Source Health
+
+Future live connector work should expose source health in a way facilitators can trust: which sources were queried, whether each source was healthy, degraded, skipped, or unavailable, what non-secret reason was observed, and whether generated content is complete enough for standup use. Resilience work should fail safely, preserve partial useful source-backed output when appropriate, avoid hiding malformed required records, and keep all credentials and environment-specific details outside the repository.
 
 ### Future Jira MCP Connector
 

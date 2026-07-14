@@ -1,11 +1,16 @@
 # Release Notes
 
+## Unreleased / v0.7.0 Draft: Connector Resilience and Source Health
+
+- Documented the next connector-hardening milestone for source health reporting, degraded-source handling, connector availability checks, and fail-safe resilience expectations.
+- Preserved the existing local-only sample workflows, safe `jira_mcp` runtime boundary, and no-secrets/no-work-specific-data constraints.
+- Kept prior release notes intact so v0.1.0 through v0.6.0 remain available as project history.
+
 ## Unreleased / v0.6.0 Draft: Real Jira MCP Connector Readiness
 
 - Added the `jira_mcp` source mode as the application-side boundary for a future approved real Jira MCP connector.
 - Added safe Jira MCP configuration fields for `sources.jira.enabled`, `mode`, `mcp_server_name`, `jql`, `project_keys`, `include_comments`, and `max_results` without adding credentials, tokens, real Jira URLs, or work-specific data.
 - Added `security.allow_live_connectors` config loading so live connector paths stay disabled by default unless a future approved runtime explicitly opts in.
-- Added source health metadata to markdown and JSON so required source failures, optional source failures, and skipped optional sources are visible.
 - Real `jira_mcp` execution now fails clearly in this local repository runtime unless an approved MCP runtime implementation is supplied; no credentials, network calls, or Jira requests are attempted.
 - Kept `jira_mcp_sample` as the deterministic local MCP-shaped test path and preserved sample/evaluation workflows.
 
