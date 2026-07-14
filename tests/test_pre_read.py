@@ -143,6 +143,8 @@ sources:
       - EXAMPLE
     include_comments: true
     max_results: 25
+security:
+  allow_live_connectors: true
 """,
         encoding="utf-8",
     )
@@ -156,6 +158,7 @@ sources:
     assert config.jira_project_keys == ("EXAMPLE",)
     assert config.jira_include_comments is True
     assert config.jira_max_results == 25
+    assert config.allow_live_connectors is True
 
 
 def test_real_jira_mcp_fails_safely_without_approved_runtime(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -170,18 +173,29 @@ def test_real_jira_mcp_fails_safely_without_approved_runtime(monkeypatch: pytest
         build_pre_read(Config(source_mode="jira_mcp", output_path=tmp_path / "real-mcp.md"))
 
     message = str(excinfo.value)
-    assert "approved MCP runtime" in message
-    assert "sources.jira.mcp_server_name" in message
+    assert "disabled by default" in message
+    assert "security.allow_live_connectors is false" in message
+    assert "approved work environment" in message
     assert "No credentials, network calls, or Jira requests were attempted" in message
     assert not (tmp_path / "real-mcp.md").exists()
 
 
 def test_real_jira_mcp_disabled_config_message_is_clear() -> None:
     with pytest.raises(JiraMcpRuntimeUnavailableError) as excinfo:
-        JiraMcpConnector(Config(source_mode="jira_mcp", jira_enabled=False)).load()
+        JiraMcpConnector(Config(source_mode="jira_mcp", jira_enabled=False, allow_live_connectors=True)).load()
 
     assert "disabled by config" in str(excinfo.value)
     assert "sources.jira.enabled is false" in str(excinfo.value)
+
+
+def test_real_jira_mcp_runtime_boundary_message_is_clear_when_live_switch_enabled() -> None:
+    with pytest.raises(JiraMcpRuntimeUnavailableError) as excinfo:
+        JiraMcpConnector(Config(source_mode="jira_mcp", allow_live_connectors=True)).load()
+
+    message = str(excinfo.value)
+    assert "approved MCP runtime" in message
+    assert "sources.jira.mcp_server_name" in message
+    assert "No credentials, network calls, or Jira requests were attempted" in message
 
 
 def test_jira_mcp_sample_response_loads_and_normalizes() -> None:
@@ -867,7 +881,7 @@ def test_main_writes_configured_output_path(tmp_path: Path, capsys: pytest.Captu
 def test_main_rejects_unavailable_jira_mcp_mode_cleanly(tmp_path: Path) -> None:
     output_path = tmp_path / "cli-pre-read.md"
 
-    with pytest.raises(SystemExit, match="approved MCP runtime"):
+    with pytest.raises(SystemExit, match="security.allow_live_connectors is false"):
         main(["--source-mode", "jira_mcp", "--output-path", str(output_path)])
 
     assert not output_path.exists()

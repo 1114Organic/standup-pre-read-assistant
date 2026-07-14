@@ -106,13 +106,13 @@ Connector logs and errors should avoid dumping full raw payloads if they could c
 
 Local-only connectors read checked-in sample files and perform no network calls. They are safe for CI and deterministic evaluation.
 
-Live connectors require approved runtime configuration. The `jira_mcp` mode is recognized now but intentionally fails in this local runtime before any credential lookup, network call, or Jira request. A future work-environment implementation may call an approved MCP server only after configuration, authentication, security review, and operational behavior are supplied outside this repository.
+Live connectors require approved runtime configuration. The `jira_mcp` mode is recognized now but intentionally fails in this local runtime before any credential lookup, network call, or Jira request. The generic config switch `security.allow_live_connectors` defaults to `false` so live connector paths are disabled by default even before connector-specific checks run. A future work-environment implementation may call an approved MCP server only after configuration, authentication, security review, and operational behavior are supplied outside this repository.
 
 ## Future Connector Examples
 
 ### Real Jira MCP connector
 
-The real Jira MCP connector boundary must call an approved Jira MCP server name from `sources.jira.mcp_server_name`, use `sources.jira.jql` or `sources.jira.project_keys`, honor `sources.jira.include_comments` and `sources.jira.max_results`, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. Credentials must be supplied by the approved MCP runtime, not code or checked-in config. The current local implementation raises `JiraMcpRuntimeUnavailableError` instead of executing.
+The real Jira MCP connector boundary must require `security.allow_live_connectors: true`, call an approved Jira MCP server name from `sources.jira.mcp_server_name`, use `sources.jira.jql` or `sources.jira.project_keys`, honor `sources.jira.include_comments` and `sources.jira.max_results`, adapt issue results to `jira_data.issues`, preserve issue keys and URLs, and pass `validate_source_data` before normalization. Credentials must be supplied by the approved MCP runtime, not code or checked-in config. The current local implementation raises `JiraMcpRuntimeUnavailableError` instead of executing.
 
 ### GitHub API connector
 

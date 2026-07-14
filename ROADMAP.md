@@ -28,7 +28,7 @@ This roadmap shows the intended path from local sample MVP to a one-team pilot. 
 - **Objective:** Add the application-side source mode and adapter boundary for the first approved live issue connector by reading Jira issues through a configured MCP server in an approved environment.
 - **Expected inputs:** Team config selecting Jira MCP mode, approved JQL or project filters, read-only credentials supplied by an external secrets mechanism, and a configured MCP server name.
 - **Expected outputs:** Jira issue activity adapted to the existing connector contract and normalized into standup progress, blockers, decisions, risks, and source references.
-- **Success criteria:** `jira_mcp` is recognized, unavailable local execution fails clearly without credentials or network calls, live Jira MCP output passes connector validation when later tested in the approved work environment, sample mode remains deterministic, no credentials are committed, and failures produce clear field-path or connector errors.
+- **Success criteria:** `jira_mcp` is recognized, live connector paths are disabled by default through `security.allow_live_connectors`, unavailable local execution fails clearly without credentials or network calls, live Jira MCP output passes connector validation when later tested in the approved work environment, sample mode remains deterministic, no credentials are committed, and failures produce clear field-path or connector errors.
 - **Out of scope:** Jira writes, workflow transitions, broad unfiltered queries, deployment automation, and GitHub or messaging live connectors.
 
 ### v0.7.0 Real GitHub Connector
