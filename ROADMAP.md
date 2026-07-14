@@ -10,7 +10,8 @@ This roadmap shows the intended path from local sample MVP to a one-team pilot. 
 | v0.2.0 Evaluation Harness | Completed | Add repeatable local evaluation scenarios and reports. |
 | v0.3.0 GitHub PR Intelligence | Completed | Improve local/sample PR signals for review, CI, stale, blocked, merged, and decision-dependent pull requests. |
 | v0.4.0 Connector Contract and Validation | Completed | Define and validate the source connector boundary without live calls. |
-| v0.5.0 Integration Config Foundation | Draft | Add editable team-level integration configuration while keeping live connectors disabled. |
+| v0.5.0 Integration Config Foundation | Completed | Add editable team-level integration configuration while keeping live connectors disabled. |
+| v0.6.0 Real Jira MCP Connector Readiness | Draft | Add the `jira_mcp` mode and safe adapter boundary; real execution awaits approved work-environment MCP testing. |
 
 ## Upcoming Milestones
 
@@ -24,10 +25,10 @@ This roadmap shows the intended path from local sample MVP to a one-team pilot. 
 
 ### v0.6.0 Real Jira MCP Connector
 
-- **Objective:** Add the first approved live issue connector by reading Jira issues through a configured MCP server.
+- **Objective:** Add the application-side source mode and adapter boundary for the first approved live issue connector by reading Jira issues through a configured MCP server in an approved environment.
 - **Expected inputs:** Team config selecting Jira MCP mode, approved JQL or project filters, read-only credentials supplied by an external secrets mechanism, and a configured MCP server name.
 - **Expected outputs:** Jira issue activity adapted to the existing connector contract and normalized into standup progress, blockers, decisions, risks, and source references.
-- **Success criteria:** Live Jira MCP output passes connector validation, sample mode remains deterministic, no credentials are committed, and failures produce clear field-path or connector errors.
+- **Success criteria:** `jira_mcp` is recognized, unavailable local execution fails clearly without credentials or network calls, live Jira MCP output passes connector validation when later tested in the approved work environment, sample mode remains deterministic, no credentials are committed, and failures produce clear field-path or connector errors.
 - **Out of scope:** Jira writes, workflow transitions, broad unfiltered queries, deployment automation, and GitHub or messaging live connectors.
 
 ### v0.7.0 Real GitHub Connector

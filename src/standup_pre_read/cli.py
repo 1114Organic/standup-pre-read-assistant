@@ -52,7 +52,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
     parser.add_argument(
         "--source-mode",
         default=None,
-        help="Source connector mode to use. Supported: sample, jira_mcp_sample.",
+        help="Source connector mode to use. Supported: sample, jira_mcp_sample, jira_mcp.",
     )
     parser.add_argument(
         "--jira-path",
@@ -148,7 +148,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     config = parse_args(argv)
     try:
         build_pre_read(config)
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         raise SystemExit(f"error: {exc}") from exc
     print(f"Wrote {config.output_path}")
     if config.json_output_path is not None:

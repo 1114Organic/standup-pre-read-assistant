@@ -161,9 +161,9 @@ The evaluation harness writes `output/evaluation-report.md` and `output/evaluati
 
 ## Integration Reality Check
 
-The local MVP is useful for validating summary structure, source references, PR intelligence, review metadata, and evaluation quality. Real product value for a pilot still requires approved live Jira, GitHub, and Slack or Teams integrations so the pre-read reflects actual team activity instead of checked-in fixtures. The next live integration milestone should be the real Jira MCP connector, because issue status, blockers, decisions, and carryover are the core inputs for a trustworthy standup pre-read.
+The local MVP is useful for validating summary structure, source references, PR intelligence, review metadata, and evaluation quality. Real product value for a pilot still requires approved live Jira, GitHub, and Slack or Teams integrations so the pre-read reflects actual team activity instead of checked-in fixtures. The next live integration milestone is the real Jira MCP connector, because issue status, blockers, decisions, and carryover are the core inputs for a trustworthy standup pre-read. The application now recognizes `jira_mcp` and has a safe adapter boundary, but real execution still must be tested and wired only inside an approved work MCP environment.
 
-The v0.5.0 integration config foundation adds `config/example-team.yaml` for sanitized team-level settings, but it does not add live connector network calls or secrets.
+The v0.5.0 integration config foundation adds `config/example-team.yaml` for sanitized team-level settings, and v0.6.0 adds Jira MCP readiness without live connector network calls or secrets.
 
 ## 6. Suggested Next Milestones
 
@@ -185,7 +185,7 @@ Structured JSON output is now available via `--json-output-path`. Future enhance
 
 ### Future Jira MCP Connector
 
-The repository now includes a local mock Jira MCP sample adapter for fixture-based validation. A real MCP-based issue connector that loads live issue data remains future work and should only be added in an approved work environment while preserving the existing normalized activity model.
+The repository now includes a local mock Jira MCP sample adapter for fixture-based validation. The real MCP-based issue connector mode is now recognized and fails safely in local runtimes. Loading live issue data remains work-environment implementation/testing work and should only run in an approved MCP environment while preserving the existing normalized activity model.
 
 ### Future GitHub API Connector
 
