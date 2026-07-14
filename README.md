@@ -150,8 +150,8 @@ security:
   allow_live_connectors: false
 ```
 
-Do not put credentials, tokens, real Jira URLs, or work-specific project keys in this file. `security.allow_live_connectors: false` keeps live connector execution disabled by default, `sources.jira.enabled: false` explicitly disables Jira MCP execution even in a future approved runtime, and the local runtime still fails safely even when those switches are true because no approved MCP adapter is wired here.
- Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
+Do not put credentials, tokens, real Jira URLs, or work-specific project keys in this file. `security.allow_live_connectors: false` keeps live connector execution disabled by default, setting `sources.jira.enabled: false` explicitly disables Jira MCP execution even in a future approved runtime, and the local runtime still fails safely even when those switches are true because no approved MCP adapter is wired here.
+Current supported runtime modes are still local-only sample adapters; real Jira MCP network calls, GitHub API calls, Slack calls, Teams calls, credentials, posting, and deployment code are intentionally not included. See [ROADMAP.md](ROADMAP.md) for the planned milestone sequence and [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md) for connector payload expectations.
 
 ## Facilitator Review Mode
 
