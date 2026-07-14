@@ -1,3 +1,18 @@
+# macOS
+.DS_Store
+
+# Python bytecode/cache artifacts
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python packaging artifacts
+*.egg-info/
+
+# Local demo/evaluation outputs; keep checked-in baseline reports visible.
+output/*
+!output/evaluation-report.json
+!output/evaluation-report.md
+!output/standup-pre-read.md
