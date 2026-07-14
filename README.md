@@ -2,7 +2,7 @@
 
 AI-powered assistant that generates a daily standup pre-read from Jira, GitHub, optional sample chat messages, and prior standup notes. Inspired from Ryan Nystrom's interview here - https://www.chatprd.ai/how-i-ai/ryan-nystrom-notion-workflows-for-engineering-velocity
 
-For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md).
+For a snapshot of the current MVP state and planned milestones, see [PROJECT_STATUS.md](PROJECT_STATUS.md). Connector payload expectations for current local adapters and future live connectors are documented in [docs/CONNECTOR_CONTRACT.md](docs/CONNECTOR_CONTRACT.md).
 
 The first build target is a thin-slice MVP: 
 
@@ -15,6 +15,10 @@ The first build target is a thin-slice MVP:
 7. Add tests that verify the output structure.
 
 Live APIs, Teams notifications, Harness, and EKS deployment are intentionally deferred until the generated pre-read quality is proven with sample data. The `jira_mcp_sample` mode is also local-only: it reads a checked-in mock Jira MCP-style response and does not contact a real Jira MCP server.
+
+## v0.4.0 Draft: Real Connector Readiness
+
+The v0.4.0 draft prepares for future live connectors without adding any live integrations. The new [connector contract](docs/CONNECTOR_CONTRACT.md) documents `SourceData` expectations, required and optional source fields, source references, timestamp and confidence guidance, error handling, security/no-secrets rules, and examples for future Jira MCP, GitHub API, and Slack/Teams connectors. Local `sample` and `jira_mcp_sample` connector outputs are now validated with lightweight contract checks before normalization so malformed source payloads fail with clear field-path errors while preserving existing sample, rich sample, chat sample, markdown, JSON, priority scoring, facilitator review, and evaluation workflows.
 
 ## v0.3.0 Draft: Local GitHub PR Intelligence
 
