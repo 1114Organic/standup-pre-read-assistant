@@ -5,6 +5,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+from .collectors import LocalChatFileCollector
 from .config import Config, load_config_file
 from .connectors import source_connector_for
 from .generator import generate_pre_read_document, render_pre_read_markdown
@@ -83,7 +84,12 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         "--chat-path",
         type=Path,
         default=None,
-        help="Optional path to a sample chat JSON file.",
+        help="Optional path to a sample chat JSON file or local Slackbot export .txt file/directory.",
+    )
+    parser.add_argument(
+        "--validate-chat",
+        action="store_true",
+        help="Parse and validate the configured local chat export before generating the pre-read.",
     )
     parser.add_argument(
         "--output-path",
@@ -141,6 +147,7 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
         "review_notes": args.review_notes,
         "approved_output_path": args.approved_output_path,
         "stale_pr_days": args.stale_pr_days,
+        "validate_chat": args.validate_chat or None,
     }
     return Config(**{**config.__dict__, **{key: value for key, value in overrides.items() if value is not None}})
 
@@ -148,6 +155,19 @@ def parse_args(argv: Sequence[str] | None = None) -> Config:
 def main(argv: Sequence[str] | None = None) -> None:
     config = parse_args(argv)
     try:
+        if config.validate_chat:
+            if config.chat_path is None or config.chat_path.suffix.lower() == ".json":
+                raise ValueError("--validate-chat requires a configured local .txt export file or directory.")
+            chat_data = LocalChatFileCollector(
+                config.chat_path,
+                timezone=config.chat_timezone,
+                lookback_hours=config.chat_lookback_hours,
+            ).collect()
+            message_count = sum(len(channel["messages"]) for channel in chat_data["channels"])
+            print(
+                f"Validated local chat export {chat_data['source_file']}: "
+                f"{len(chat_data['channels'])} channel(s), {message_count} message(s)"
+            )
         build_pre_read(config)
     except (ValueError, RuntimeError) as exc:
         raise SystemExit(f"error: {exc}") from exc
