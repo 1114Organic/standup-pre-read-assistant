@@ -14,6 +14,9 @@ class Config:
     github_path: Path = Path("examples/github-pr-sample.json")
     prior_standup_path: Path = Path("examples/prior-standup.md")
     chat_path: Path | None = None
+    chat_timezone: str = "Etc/UTC"
+    chat_lookback_hours: int = 24
+    validate_chat: bool = False
     output_path: Path = Path("output/standup-pre-read.md")
     json_output_path: Path | None = None
     review_status: Literal["draft", "approved", "rejected"] = "draft"
@@ -227,5 +230,19 @@ def load_config_file(path: Path) -> Config:
     chat_enabled = chat.get("enabled")
     if chat_enabled is False:
         updates["chat_path"] = None
+    elif chat_enabled is True:
+        chat_path = _optional_path(chat.get("path"))
+        if chat_path is None:
+            raise ValueError("sources.chat.path is required when local chat is enabled.")
+        updates["chat_path"] = chat_path
+
+    chat_timezone = _string_value(chat.get("timezone") or team.get("timezone"), "sources.chat.timezone")
+    if chat_timezone is not None:
+        updates["chat_timezone"] = chat_timezone
+    chat_lookback_hours = _int_value(chat.get("lookback_hours"), "sources.chat.lookback_hours")
+    if chat_lookback_hours is not None:
+        if chat_lookback_hours < 1:
+            raise ValueError("sources.chat.lookback_hours must be a positive integer.")
+        updates["chat_lookback_hours"] = chat_lookback_hours
 
     return replace(config, **updates)
