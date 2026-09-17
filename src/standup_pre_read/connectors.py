@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from .collectors import (
+    LocalChatFileCollector,
     load_chat_sample,
     load_github_pr_sample,
     load_jira_mcp_sample,
@@ -56,6 +57,17 @@ class SourceConnector(Protocol):
         """Load source data without normalizing or generating output."""
 
 
+def _load_chat(config: Config) -> dict[str, Any]:
+    """Preserve JSON sample support while routing text exports to the local collector."""
+    if config.chat_path is None or config.chat_path.suffix.lower() == ".json":
+        return load_chat_sample(config.chat_path)
+    return LocalChatFileCollector(
+        config.chat_path,
+        timezone=config.chat_timezone,
+        lookback_hours=config.chat_lookback_hours,
+    ).collect()
+
+
 @dataclass(frozen=True)
 class SampleSourceConnector:
     config: Config
@@ -71,7 +83,7 @@ class SampleSourceConnector:
         )
         chat_data = _load_optional_source(
             "chat",
-            lambda: load_chat_sample(self.config.chat_path),
+            lambda: _load_chat(self.config),
             source_health,
             enabled=self.config.chat_path is not None,
             skipped_message="No chat sample path configured.",
@@ -105,7 +117,7 @@ class JiraMcpSampleSourceConnector:
         )
         chat_data = _load_optional_source(
             "chat",
-            lambda: load_chat_sample(self.config.chat_path),
+            lambda: _load_chat(self.config),
             source_health,
             enabled=self.config.chat_path is not None,
             skipped_message="No chat sample path configured.",
