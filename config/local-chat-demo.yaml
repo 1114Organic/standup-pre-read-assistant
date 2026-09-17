@@ -1,0 +1,18 @@
+team:
+  name: Local Chat Demo Team
+  timezone: Etc/UTC
+
+sources:
+  jira:
+    mode: sample
+  github:
+    mode: sample
+  chat:
+    enabled: true
+    path: examples/local-chat-export.txt
+    timezone: Etc/UTC
+    lookback_hours: 24
+
+outputs:
+  markdown_path: output/local-chat-standup-pre-read.md
+  json_path: output/local-chat-standup-pre-read.json

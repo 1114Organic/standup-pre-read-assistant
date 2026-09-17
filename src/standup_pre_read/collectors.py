@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
+from datetime import datetime, time, timedelta
+from hashlib import sha256
 from pathlib import Path
 from typing import Any, cast
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 def load_jira_sample(path: Path) -> dict[str, Any]:
@@ -96,6 +100,148 @@ def load_chat_sample(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {"channels": []}
     return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+
+
+_EXPORT_HEADER = re.compile(r"^STANDUP EXPORT - (?P<date>.+)$")
+_CHANNEL_HEADER = re.compile(r"^CHANNEL:\s*#?(?P<channel>\S.*?)\s*$")
+_MESSAGE_HEADER = re.compile(r"^\[(?P<time>\d{1,2}:\d{2}\s*(?:AM|PM))\]\s+(?P<author>.+):\s*$", re.IGNORECASE)
+_JIRA_REFERENCE = re.compile(r"\b[A-Z][A-Z0-9]+-\d+\b")
+_PR_REFERENCE = re.compile(
+    r"(?:github\.com/[^/\s]+/[^/\s]+/pull/|\bPR\s*#|\bpull request\s*#)(\d+)\b", re.IGNORECASE
+)
+
+
+@dataclass(frozen=True)
+class LocalChatFileCollector:
+    """Read Slackbot standup exports from one explicitly configured local path."""
+
+    path: Path
+    timezone: str = "Etc/UTC"
+    lookback_hours: int = 24
+    now: datetime | None = None
+
+    def _select_file(self) -> Path:
+        if self.path.is_file():
+            if self.path.suffix.lower() != ".txt":
+                raise ValueError(f"Local chat export must be a .txt file: {self.path}")
+            candidates = [self.path]
+        elif self.path.is_dir():
+            candidates = [item for item in self.path.iterdir() if item.is_file() and item.suffix.lower() == ".txt"]
+        else:
+            raise FileNotFoundError(f"Local chat export path does not exist: {self.path}")
+
+        valid: list[tuple[datetime, Path]] = []
+        for candidate in candidates:
+            first_line = candidate.read_text(encoding="utf-8").splitlines()[:1]
+            if not first_line:
+                continue
+            match = _EXPORT_HEADER.fullmatch(first_line[0].strip())
+            if match:
+                try:
+                    export_date = datetime.strptime(match.group("date"), "%A, %B %d, %Y")
+                except ValueError:
+                    continue
+                valid.append((export_date, candidate))
+        if not valid:
+            raise ValueError(f"No matching Slackbot standup export .txt files found in {self.path}")
+        return max(valid, key=lambda item: (item[0], item[1].name))[1]
+
+    def collect(self) -> dict[str, Any]:
+        try:
+            zone = ZoneInfo(self.timezone)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"Unknown local chat timezone: {self.timezone}") from exc
+        selected = self._select_file()
+        lines = selected.read_text(encoding="utf-8").splitlines()
+        header = _EXPORT_HEADER.fullmatch(lines[0].strip())
+        if header is None:
+            raise ValueError("Local chat export is missing its STANDUP EXPORT header.")
+        export_date = datetime.strptime(header.group("date"), "%A, %B %d, %Y").date()
+        cutoff_now = self.now
+        if cutoff_now is not None and cutoff_now.tzinfo is None:
+            cutoff_now = cutoff_now.replace(tzinfo=zone)
+
+        channels: list[dict[str, Any]] = []
+        current_channel: dict[str, Any] | None = None
+        current_message: dict[str, Any] | None = None
+        thread_parent_id: str | None = None
+
+        def finish_message() -> None:
+            nonlocal current_message
+            if current_message is None or current_channel is None:
+                return
+            current_message["text"] = "\n".join(current_message.pop("_lines")).strip()
+            content = "\x1f".join(
+                (
+                    current_channel["name"],
+                    current_message["timestamp"],
+                    current_message["author"],
+                    current_message["text"],
+                )
+            )
+            current_message["id"] = f"local-chat-{sha256(content.encode()).hexdigest()[:16]}"
+            if current_message.pop("_thread", False) and thread_parent_id is not None:
+                current_message["thread_parent_id"] = thread_parent_id
+            related = sorted(set(_JIRA_REFERENCE.findall(current_message["text"])))
+            related.extend(f"PR #{number}" for number in _PR_REFERENCE.findall(current_message["text"]))
+            current_message["related_work_items"] = list(dict.fromkeys(related))
+            timestamp = datetime.fromisoformat(current_message["timestamp"])
+            if cutoff_now is None or timestamp >= cutoff_now.astimezone(zone) - timedelta(hours=self.lookback_hours):
+                current_channel["messages"].append(current_message)
+            current_message = None
+
+        in_thread = False
+        for raw_line in lines[1:]:
+            channel_match = _CHANNEL_HEADER.fullmatch(raw_line.strip())
+            if channel_match:
+                finish_message()
+                current_channel = {"name": channel_match.group("channel"), "messages": []}
+                channels.append(current_channel)
+                thread_parent_id = None
+                in_thread = False
+                continue
+            if raw_line.strip() == "Thread replies:":
+                finish_message()
+                if current_channel and current_channel["messages"]:
+                    thread_parent_id = current_channel["messages"][-1]["id"]
+                in_thread = True
+                continue
+            message_match = _MESSAGE_HEADER.fullmatch(raw_line.strip())
+            if message_match:
+                finish_message()
+                if current_channel is None:
+                    raise ValueError("Local chat message appeared before a CHANNEL header.")
+                parsed_time = datetime.strptime(message_match.group("time").upper(), "%I:%M %p").time()
+                timestamp = datetime.combine(export_date, time(parsed_time.hour, parsed_time.minute), zone)
+                current_message = {
+                    "author": message_match.group("author").strip(),
+                    "timestamp": timestamp.isoformat(),
+                    "_lines": [],
+                    "_thread": in_thread,
+                }
+                continue
+            if current_message is not None:
+                current_message["_lines"].append(raw_line)
+            elif raw_line.strip():
+                raise ValueError(f"Unrecognized local chat export line: {raw_line}")
+        finish_message()
+        if cutoff_now is None:
+            timestamps = [
+                datetime.fromisoformat(message["timestamp"])
+                for channel in channels
+                for message in channel["messages"]
+            ]
+            if timestamps:
+                newest = max(timestamps)
+                threshold = newest - timedelta(hours=self.lookback_hours)
+                for channel in channels:
+                    channel["messages"] = [
+                        message
+                        for message in channel["messages"]
+                        if datetime.fromisoformat(message["timestamp"]) >= threshold
+                    ]
+        channels = [channel for channel in channels if channel["messages"]]
+        return {"workspace": "Local Chat Export", "source_file": str(selected), "channels": channels}
 
 
 def extract_prior_items(markdown: str) -> list[dict[str, str]]:

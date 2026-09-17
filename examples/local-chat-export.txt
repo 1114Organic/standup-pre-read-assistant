@@ -1,0 +1,11 @@
+STANDUP EXPORT - Thursday, September 17, 2026
+CHANNEL: #team-standup
+[7:43 AM] Alex Rivera (they/them):
+Blocked on SAMPLE-103 while PR #42 waits for review.
+The staging check is still failing.
+Thread replies:
+[8:01 AM] Morgan Lee (she/her):
+Follow up: I will investigate SAMPLE-103 before standup.
+CHANNEL: #delivery
+[8:16 AM] Casey Chen:
+Decision needed: should we merge GitHub PR #43 today?
